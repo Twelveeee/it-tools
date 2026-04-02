@@ -135,6 +135,10 @@ tools:
     title: SQL 美化和格式化
     description: 在线格式化和美化您的 SQL 查询（它支持各种 SQL 方言）。
 
+  mysql-in-query:
+    title: MySQL IN 查询生成器
+    description: 将按行分隔的值转换为可用于 MySQL IN 子句的带引号列表。
+
   benchmark-builder:
     title: 基准生成器
     description: 简单的在线基准构建器可以轻松比较任务的执行时间。

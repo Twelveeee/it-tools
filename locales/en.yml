@@ -137,6 +137,10 @@ tools:
     title: SQL prettify and format
     description: Format and prettify your SQL queries online (it supports various SQL dialects).
 
+  mysql-in-query:
+    title: MySQL IN query builder
+    description: Convert newline-separated values into a quoted list for a MySQL IN clause.
+
   benchmark-builder:
     title: Benchmark builder
     description: Easily compare execution time of tasks with this very simple online benchmark builder.
