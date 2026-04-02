@@ -10,6 +10,11 @@
     "type": "git",
     "url": "https://github.com/CorentinTh/it-tools"
   },
+  "pnpm": {
+    "overrides": {
+      "@vueuse/shared": "10.3.0"
+    }
+  },
   "keywords": [
     "productivity",
     "converter",
@@ -86,7 +91,6 @@
     "oui-data": "^1.0.10",
     "pdf-signature-reader": "^1.4.2",
     "pinia": "^2.0.34",
-    "plausible-tracker": "^0.3.8",
     "qrcode": "^1.5.1",
     "randexp": "^0.5.3",
     "sql-formatter": "^13.0.0",
