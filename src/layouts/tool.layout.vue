@@ -70,6 +70,12 @@ const toolDescription = computed<string>(() => t(`tools.${i18nKey.value}.descrip
   ::v-deep(& > *) {
     flex: 0 1 600px;
   }
+
+  ::v-deep(& > .tool-wide) {
+    flex: 1 1 1280px;
+    width: min(1280px, 100%);
+    max-width: 1280px;
+  }
 }
 
 .tool-layout {

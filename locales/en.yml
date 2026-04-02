@@ -93,6 +93,10 @@ tools:
     button:
       copy: Copy
       refresh: Refresh
+
+  tokenizer:
+    title: Tokenizer
+    description: Count and inspect tokens for GPT-5.4 and Qwen chat or text inputs directly in your browser.
   percentage-calculator:
     title: Percentage calculator
     description: Easily calculate percentages from a value to another value, or from a percentage to a value.

@@ -92,6 +92,9 @@ tools:
     button:
       copy: 复制
       refresh: 刷新
+  tokenizer:
+    title: Token 计算器
+    description: 直接在浏览器里计算并查看 GPT-5.4 和 Qwen 文本或聊天输入的 token。
   percentage-calculator:
     title: 百分比计算器
     description: 轻松计算从一个值到另一个值的百分比，或从百分比到值的百分比。
