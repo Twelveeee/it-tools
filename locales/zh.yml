@@ -95,6 +95,9 @@ tools:
   tokenizer:
     title: Token 计算器
     description: 直接在浏览器里计算并查看 GPT-5.4 和 Qwen 文本或聊天输入的 token。
+  php-unserialize:
+    title: PHP 反序列化
+    description: 反序列化 PHP serialize 值，并以 print_r、var_dump 或 var_export 风格查看结果。
   percentage-calculator:
     title: 百分比计算器
     description: 轻松计算从一个值到另一个值的百分比，或从百分比到值的百分比。
