@@ -90,6 +90,24 @@ describe('php-unserialize service', () => {
     `);
   });
 
+  it('formats nested arrays with json output', () => {
+    const parsed = parsePhpSerialized(nestedSerialized);
+
+    expect(parsed.ok && formatPhpValue(parsed.value, 'json')).toMatchInlineSnapshot(`
+      "{
+        \\"name\\": \\"Alice\\",
+        \\"items\\": [
+          \\"foo\\",
+          \\"bar\\"
+        ],
+        \\"active\\": true,
+        \\"meta\\": {
+          \\"count\\": 2
+        }
+      }"
+    `);
+  });
+
   it('formats scalars across output modes', () => {
     const utf8String = parsePhpSerialized('s:6:"你好";');
     const bigintValue = parsePhpSerialized('i:9223372036854775808;');
@@ -102,6 +120,7 @@ describe('php-unserialize service', () => {
     expect(floatValue.ok && formatPhpValue(floatValue.value, 'var_dump')).toBe('float(3.14)');
     expect(booleanValue.ok && formatPhpValue(booleanValue.value, 'var_export')).toBe('false');
     expect(nullValue.ok && formatPhpValue(nullValue.value, 'var_dump')).toBe('NULL');
+    expect(bigintValue.ok && formatPhpValue(bigintValue.value, 'json')).toBe('"9223372036854775808"');
   });
 
   it('keeps original class names for incomplete PHP objects', () => {
@@ -123,6 +142,12 @@ describe('php-unserialize service', () => {
       "MyClass::__set_state(array (
         'a' => 1,
       ))"
+    `);
+    expect(parsed.ok && formatPhpValue(parsed.value, 'json')).toMatchInlineSnapshot(`
+      "{
+        \\"__phpClassName\\": \\"MyClass\\",
+        \\"a\\": 1
+      }"
     `);
   });
 });

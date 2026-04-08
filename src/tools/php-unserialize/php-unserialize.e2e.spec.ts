@@ -39,6 +39,10 @@ Array
 
     await expect(page.getByTestId('area-content')).toContainText('array (');
     await expect(page.getByTestId('area-content')).toContainText('\'foo\' => \'bar\',');
+
+    await page.getByTestId('json').click();
+
+    await expect(page.getByTestId('area-content')).toContainText('"foo": "bar"');
   });
 
   test('shows validation feedback and clears output for invalid input', async ({ page }) => {

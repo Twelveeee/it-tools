@@ -2,7 +2,7 @@
 import { Buffer as BufferPolyfill } from 'buffer';
 import { unserialize as phpUnserialize } from 'php-serialize';
 
-export type PhpUnserializeMode = 'print_r' | 'var_dump' | 'var_export';
+export type PhpUnserializeMode = 'json' | 'print_r' | 'var_dump' | 'var_export';
 
 export type ParsePhpSerializedResult =
   | { ok: true; value: unknown }
@@ -32,6 +32,8 @@ export function parsePhpSerialized(input: string): ParsePhpSerializedResult {
 
 export function formatPhpValue(value: unknown, mode: PhpUnserializeMode): string {
   switch (mode) {
+    case 'json':
+      return formatJson(value);
     case 'print_r':
       return formatPrintR(value);
     case 'var_dump':
@@ -39,6 +41,40 @@ export function formatPhpValue(value: unknown, mode: PhpUnserializeMode): string
     case 'var_export':
       return formatVarExport(value);
   }
+}
+
+function formatJson(value: unknown) {
+  return JSON.stringify(normalizeJsonValue(value), null, 2);
+}
+
+function normalizeJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(entry => normalizeJsonValue(entry));
+  }
+
+  if (typeof value === 'bigint') {
+    return String(value);
+  }
+
+  if (isPlainPhpArray(value)) {
+    return Object.fromEntries(getDisplayEntries(value).map(([key, entryValue]) => [key, normalizeJsonValue(entryValue)]));
+  }
+
+  if (isIncompletePhpClass(value)) {
+    return {
+      __phpClassName: getObjectClassName(value),
+      ...Object.fromEntries(getDisplayEntries(value).map(([key, entryValue]) => [key, normalizeJsonValue(entryValue)])),
+    };
+  }
+
+  if (isObjectLike(value)) {
+    return {
+      __phpClassName: getObjectClassName(value),
+      ...Object.fromEntries(getDisplayEntries(value).map(([key, entryValue]) => [key, normalizeJsonValue(entryValue)])),
+    };
+  }
+
+  return value;
 }
 
 function ensureBuffer() {

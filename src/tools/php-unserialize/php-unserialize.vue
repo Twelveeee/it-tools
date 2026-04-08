@@ -5,7 +5,7 @@ import CInputText from '@/ui/c-input-text/c-input-text.vue';
 import { useValidation } from '@/composable/validation';
 
 const defaultInput = 'a:4:{s:4:"name";s:5:"Alice";s:5:"items";a:2:{i:0;s:3:"foo";i:1;s:3:"bar";}s:6:"active";b:1;s:4:"meta";a:1:{s:5:"count";i:2;}}';
-const outputModeOptions = ['print_r', 'var_dump', 'var_export'] as const;
+const outputModeOptions = ['print_r', 'var_dump', 'var_export', 'json'] as const;
 type PhpUnserializeMode = typeof outputModeOptions[number];
 
 const inputElement = ref<InstanceType<typeof CInputText>>();
@@ -39,6 +39,8 @@ const output = computed(() => {
 
   return formatPhpValue(parseResult.value.value, outputMode.value);
 });
+
+const outputLanguage = computed(() => outputMode.value === 'json' ? 'json' : 'php');
 </script>
 
 <template>
@@ -71,7 +73,7 @@ const output = computed(() => {
     </div>
     <textarea-copyable
       :value="output"
-      language="php"
+      :language="outputLanguage"
       :follow-height-of="inputElement?.inputWrapperRef"
     />
   </div>
