@@ -1,10 +1,15 @@
 // eslint-disable-next-line unicorn/prefer-node-protocol
 import { Buffer as BufferPolyfill } from 'buffer';
-import { unserialize as phpUnserialize } from 'php-serialize';
+import JSON5 from 'json5';
+import { serialize as phpSerialize, unserialize as phpUnserialize } from 'php-serialize';
 
 export type PhpUnserializeMode = 'json' | 'print_r' | 'var_dump' | 'var_export';
 
 export type ParsePhpSerializedResult =
+  | { ok: true; value: unknown }
+  | { ok: false; error: string };
+
+export type ParseJsonInputResult =
   | { ok: true; value: unknown }
   | { ok: false; error: string };
 
@@ -28,6 +33,27 @@ export function parsePhpSerialized(input: string): ParsePhpSerializedResult {
       error: error instanceof Error ? error.message : 'Unable to unserialize input.',
     };
   }
+}
+
+export function parseJsonInput(input: string): ParseJsonInputResult {
+  try {
+    return {
+      ok: true,
+      value: JSON5.parse(input),
+    };
+  }
+  catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Unable to parse JSON input.',
+    };
+  }
+}
+
+export function serializePhpValue(value: unknown): string {
+  ensureBuffer();
+
+  return phpSerialize(value);
 }
 
 export function formatPhpValue(value: unknown, mode: PhpUnserializeMode): string {

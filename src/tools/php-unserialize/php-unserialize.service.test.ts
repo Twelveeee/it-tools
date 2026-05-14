@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatPhpValue, parsePhpSerialized } from './php-unserialize.service';
+import { formatPhpValue, parseJsonInput, parsePhpSerialized, serializePhpValue } from './php-unserialize.service';
 
 const nestedSerialized = 'a:4:{s:4:"name";s:5:"Alice";s:5:"items";a:2:{i:0;s:3:"foo";i:1;s:3:"bar";}s:6:"active";b:1;s:4:"meta";a:1:{s:5:"count";i:2;}}';
 const objectSerialized = 'O:7:"MyClass":1:{s:1:"a";i:1;}';
@@ -149,5 +149,46 @@ describe('php-unserialize service', () => {
         \\"a\\": 1
       }"
     `);
+  });
+
+  it('parses JSON input before serialization', () => {
+    expect(parseJsonInput('{name:"Alice",items:["foo","bar"]}')).toEqual({
+      ok: true,
+      value: {
+        name: 'Alice',
+        items: ['foo', 'bar'],
+      },
+    });
+  });
+
+  it('returns an error for invalid JSON input', () => {
+    const result = parseJsonInput('{not valid json');
+
+    expect(result.ok).toBe(false);
+    expect(result.ok ? '' : result.error).not.toBe('');
+  });
+
+  it('serializes nested JSON-compatible values as PHP arrays', () => {
+    const parsed = parseJsonInput(`{
+      "name": "Alice",
+      "items": ["foo", "bar"],
+      "active": true,
+      "meta": { "count": 2 }
+    }`);
+
+    expect(parsed.ok && serializePhpValue(parsed.value)).toBe(nestedSerialized);
+  });
+
+  it('serializes UTF-8 strings with PHP byte lengths', () => {
+    expect(serializePhpValue('你好')).toBe('s:6:"你好";');
+  });
+
+  it('serializes JSON scalar values', () => {
+    expect(serializePhpValue('hello')).toBe('s:5:"hello";');
+    expect(serializePhpValue(42)).toBe('i:42;');
+    expect(serializePhpValue(3.14)).toBe('d:3.14;');
+    expect(serializePhpValue(true)).toBe('b:1;');
+    expect(serializePhpValue(false)).toBe('b:0;');
+    expect(serializePhpValue(null)).toBe('N;');
   });
 });

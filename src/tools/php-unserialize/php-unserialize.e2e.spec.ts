@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test';
 
-test.describe('Tool - PHP unserialize', () => {
+test.describe('Tool - PHP serialize / unserialize', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/php-unserialize');
   });
 
   test('Has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('PHP unserialize - IT Tools');
+    await expect(page).toHaveTitle('PHP serialize / unserialize - IT Tools');
   });
 
   test('updates output when the input changes', async ({ page }) => {
@@ -49,6 +49,31 @@ Array
     await page.getByTestId('input').fill('not serialized');
 
     await expect(page.getByText(/Unable to unserialize input\./)).toBeVisible();
+
+    const generatedOutput = await page.getByTestId('area-content').innerText();
+
+    expect(generatedOutput.trim()).toBe('');
+  });
+
+  test('serializes JSON input to a PHP serialized value', async ({ page }) => {
+    await page.getByTestId('serialize').click();
+    await page.getByTestId('input').fill(`
+{
+  "name": "Alice",
+  "items": ["foo", "bar"]
+}
+    `.trim());
+
+    const generatedOutput = await page.getByTestId('area-content').innerText();
+
+    expect(generatedOutput.trim()).toBe('a:2:{s:4:"name";s:5:"Alice";s:5:"items";a:2:{i:0;s:3:"foo";i:1;s:3:"bar";}}');
+  });
+
+  test('shows validation feedback and clears output for invalid JSON input', async ({ page }) => {
+    await page.getByTestId('serialize').click();
+    await page.getByTestId('input').fill('{not valid json');
+
+    await expect(page.getByText(/Unable to parse JSON input\./)).toBeVisible();
 
     const generatedOutput = await page.getByTestId('area-content').innerText();
 
