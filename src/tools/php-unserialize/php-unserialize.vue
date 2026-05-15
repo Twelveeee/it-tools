@@ -89,21 +89,28 @@ const outputLanguage = computed(() => direction.value === 'serialize' || outputM
 
 <template>
   <div important:flex-full important:flex-shrink-0 important:flex-grow-0>
-    <div flex flex-wrap justify-center gap-4>
-      <c-buttons-select
-        v-model:value="direction"
-        :options="directionOptions"
-        label="Mode"
-        label-width="110px"
-      />
+    <div flex flex-col items-center gap-2>
+      <div flex justify-center>
+        <c-buttons-select
+          v-model:value="direction"
+          :options="directionOptions"
+          label="Mode"
+          label-width="110px"
+        />
+      </div>
 
-      <c-buttons-select
-        v-if="direction === 'unserialize'"
-        v-model:value="outputMode"
-        :options="outputModeOptions"
-        label="Output format"
-        label-width="110px"
-      />
+      <div
+        flex justify-center
+        :aria-hidden="direction === 'serialize'"
+        :style="{ visibility: direction === 'unserialize' ? 'visible' : 'hidden' }"
+      >
+        <c-buttons-select
+          v-model:value="outputMode"
+          :options="outputModeOptions"
+          label="Output format"
+          label-width="110px"
+        />
+      </div>
     </div>
   </div>
 
