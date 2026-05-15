@@ -45,6 +45,19 @@ Array
     await expect(page.getByTestId('area-content')).toContainText('"foo": "bar"');
   });
 
+  test('keeps the input position stable when switching modes', async ({ page }) => {
+    await page.setViewportSize({ width: 520, height: 900 });
+    await page.reload();
+
+    const inputPositionBeforeModeChange = await page.getByTestId('input').boundingBox();
+
+    await page.getByTestId('serialize').click();
+
+    const inputPositionAfterModeChange = await page.getByTestId('input').boundingBox();
+
+    expect(inputPositionAfterModeChange?.y).toBe(inputPositionBeforeModeChange?.y);
+  });
+
   test('shows validation feedback and clears output for invalid input', async ({ page }) => {
     await page.getByTestId('input').fill('not serialized');
 
