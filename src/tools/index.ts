@@ -41,6 +41,7 @@ import { tool as benchmarkBuilder } from './benchmark-builder';
 import { tool as userAgentParser } from './user-agent-parser';
 import { tool as ipv4SubnetCalculator } from './ipv4-subnet-calculator';
 import { tool as dockerRunToDockerComposeConverter } from './docker-run-to-docker-compose-converter';
+import { tool as mysqlInsertMerger } from './mysql-insert-merger';
 import { tool as mysqlInQuery } from './mysql-in-query';
 import { tool as htmlWysiwygEditor } from './html-wysiwyg-editor';
 import { tool as rsaKeyPairGenerator } from './rsa-key-pair-generator';
@@ -156,6 +157,7 @@ export const toolsByCategory: ToolCategory[] = [
       jsonMinify,
       jsonToCsv,
       sqlPrettify,
+      mysqlInsertMerger,
       mysqlInQuery,
       chmodCalculator,
       dockerRunToDockerComposeConverter,

@@ -145,6 +145,10 @@ tools:
     title: MySQL IN 查询生成器
     description: 将按行分隔的值转换为可用于 MySQL IN 子句的带引号列表。
 
+  mysql-insert-merger:
+    title: MySQL INSERT 合并器
+    description: 去除 MySQL INSERT 语句中的数据库名或 id 列，并按批次合并输出。
+
   benchmark-builder:
     title: 基准生成器
     description: 简单的在线基准构建器可以轻松比较任务的执行时间。

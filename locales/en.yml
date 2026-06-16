@@ -148,6 +148,10 @@ tools:
     title: MySQL IN query builder
     description: Convert newline-separated values into a quoted list for a MySQL IN clause.
 
+  mysql-insert-merger:
+    title: MySQL INSERT merger
+    description: Remove database names or id columns from MySQL INSERT statements and merge them into batches.
+
   benchmark-builder:
     title: Benchmark builder
     description: Easily compare execution time of tasks with this very simple online benchmark builder.

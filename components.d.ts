@@ -141,6 +141,7 @@ declare module '@vue/runtime-core' {
     MetaTagGenerator: typeof import('./src/tools/meta-tag-generator/meta-tag-generator.vue')['default']
     MimeTypes: typeof import('./src/tools/mime-types/mime-types.vue')['default']
     MysqlInQuery: typeof import('./src/tools/mysql-in-query/mysql-in-query.vue')['default']
+    MysqlInsertMerger: typeof import('./src/tools/mysql-insert-merger/mysql-insert-merger.vue')['default']
     NAlert: typeof import('naive-ui')['NAlert']
     NavbarButtons: typeof import('./src/components/NavbarButtons.vue')['default']
     NButton: typeof import('naive-ui')['NButton']
