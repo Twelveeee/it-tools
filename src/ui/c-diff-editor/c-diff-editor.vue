@@ -57,8 +57,8 @@ onMounted(() => {
   });
 
   editor.setModel({
-    original: monaco.editor.createModel('original text', 'txt'),
-    modified: monaco.editor.createModel('modified text', 'txt'),
+    original: monaco.editor.createModel('', 'txt'),
+    modified: monaco.editor.createModel('', 'txt'),
   });
 });
 </script>
