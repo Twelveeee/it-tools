@@ -11,6 +11,15 @@ const withNumbers = useQueryParam({ name: 'numbers', defaultValue: true });
 const withSymbols = useQueryParam({ name: 'symbols', defaultValue: false });
 const { t } = useI18n();
 
+const lengthInputValue = computed<number | null>({
+  get: () => length.value,
+  set: (value) => {
+    if (value !== null) {
+      length.value = value;
+    }
+  },
+});
+
 const [token, refreshToken] = computedRefreshable(() =>
   createToken({
     length: length.value,
@@ -51,8 +60,18 @@ const { copy } = useCopy({ source: token, text: t('tools.token-generator.copied'
         </div>
       </n-form>
 
-      <n-form-item :label="`${t('tools.token-generator.length')} (${length})`" label-placement="left">
-        <n-slider v-model:value="length" :step="1" :min="1" :max="512" />
+      <n-form-item :label="t('tools.token-generator.length')" label-placement="left">
+        <div class="length-controls">
+          <n-slider v-model:value="length" :step="1" :min="1" :max="512" />
+          <n-input-number
+            v-model:value="lengthInputValue"
+            class="length-input"
+            :step="1"
+            :min="1"
+            :max="512"
+            :precision="0"
+          />
+        </div>
       </n-form-item>
 
       <c-input-text
@@ -78,6 +97,17 @@ const { copy } = useCopy({ source: token, text: t('tools.token-generator.copied'
 </template>
 
 <style scoped lang="less">
+.length-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.length-input {
+  flex: 0 0 104px;
+}
+
 ::v-deep(.token-display) {
   textarea {
     text-align: center;

@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { NBackTop } from 'naive-ui';
 import CInputText from '@/ui/c-input-text/c-input-text.vue';
 import { useCopy } from '@/composable/copy';
 
-const input = useStorage(
-  'mysql-in-query:input',
-  ['1', '2', '3', '4'].join('\n'),
-);
+const input = ref('');
+
+onMounted(() => {
+  localStorage.removeItem('mysql-in-query:input');
+});
 
 function escapeMysqlValue(value: string) {
   return value
@@ -30,6 +32,15 @@ const output = computed(() =>
 );
 
 const { copy } = useCopy({ source: output, text: 'MySQL IN query values copied to the clipboard' });
+
+function activateBackTop(event: KeyboardEvent) {
+  if (event.key !== 'Enter' && event.key !== ' ') {
+    return;
+  }
+
+  event.preventDefault();
+  (event.currentTarget as HTMLElement).click();
+}
 </script>
 
 <template>
@@ -69,6 +80,18 @@ const { copy } = useCopy({ source: output, text: 'MySQL IN query values copied t
         />
       </div>
     </c-card>
+
+    <NBackTop
+      data-test-id="back-to-top"
+      aria-label="Back to top"
+      title="Back to top"
+      role="button"
+      tabindex="0"
+      right="clamp(16px, 3vw, 40px)"
+      bottom="clamp(16px, 3vw, 40px)"
+      :visibility-height="180"
+      @keydown="activateBackTop"
+    />
   </div>
 </template>
 
