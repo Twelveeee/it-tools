@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import verifyPDF from 'pdf-signature-reader';
 import type { SignatureInfo } from './pdf-signature-checker.types';
+import { PDF_SIGNATURE_TRUST_WARNING } from './pdf-signature-checker.service';
 import { formatBytes } from '@/utils/convert';
 
 const signatures = ref<SignatureInfo[]>([]);
@@ -13,7 +14,12 @@ async function onVerifyClicked(uploadedFile: File) {
 
   status.value = 'loading';
   try {
-    const { signatures: parsedSignatures } = verifyPDF(fileBuffer);
+    const result = verifyPDF(fileBuffer);
+    if (!result || !Array.isArray(result.signatures) || result.signatures.length === 0) {
+      throw new Error('No readable PDF signatures found');
+    }
+
+    const { signatures: parsedSignatures } = result;
     signatures.value = parsedSignatures;
     status.value = 'parsed';
   }
@@ -29,6 +35,10 @@ async function onVerifyClicked(uploadedFile: File) {
     <div mx-auto max-w-600px>
       <c-file-upload title="Drag and drop a PDF file here, or click to select a file" accept=".pdf" @file-upload="onVerifyClicked" />
 
+      <c-alert mt-4 title="Certificate trust is not verified">
+        {{ PDF_SIGNATURE_TRUST_WARNING }}
+      </c-alert>
+
       <c-card v-if="file" mt-4 flex gap-2>
         <div font-bold>
           {{ file.name }}
@@ -41,7 +51,7 @@ async function onVerifyClicked(uploadedFile: File) {
 
       <div v-if="status === 'error'">
         <c-alert mt-4>
-          No signatures found in the provided file.
+          No readable signatures were found in the provided PDF.
         </c-alert>
       </div>
     </div>

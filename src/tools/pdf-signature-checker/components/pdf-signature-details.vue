@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { SignatureInfo } from '../pdf-signature-checker.types';
+import { getSignatureStatusItems } from '../pdf-signature-checker.service';
 
 const props = defineProps<{ signature: SignatureInfo }>();
 const { signature } = toRefs(props);
@@ -20,10 +21,26 @@ const certs = computed(() => signature.value.meta.certs.map((certificate, index)
   certificateName: `Certificate ${index + 1}`,
 })),
 );
+
+const statusItems = computed(() => getSignatureStatusItems(signature.value));
 </script>
 
 <template>
   <div flex flex-col gap-2>
+    <div grid mb-3 gap-3 md:grid-cols-2>
+      <div v-for="item in statusItems" :key="item.key" rounded b="1px solid gray op-30" p-3>
+        <div mb-2 flex items-center justify-between gap-2>
+          <span font-bold>{{ item.label }}</span>
+          <n-tag :type="item.type" :bordered="false">
+            {{ item.value }}
+          </n-tag>
+        </div>
+        <div text-sm op-70>
+          {{ item.description }}
+        </div>
+      </div>
+    </div>
+
     <c-table :data="certs" :headers="tableHeaders">
       <template #validityPeriod="{ value }">
         <c-key-value-list

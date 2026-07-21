@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { IconDragDrop } from '@tabler/icons-vue';
-import { useHead } from '@vueuse/head';
+import { useHead } from '@unhead/vue';
 import { computed } from 'vue';
 import Draggable from 'vuedraggable';
 import ToolCard from '../components/ToolCard.vue';
@@ -17,19 +17,34 @@ const favoriteTools = computed(() => toolStore.favoriteTools);
 function onUpdateFavoriteTools() {
   toolStore.updateFavoriteTools(favoriteTools.value); // Update the store with the new order
 }
+
+function moveFavorite(index: number, direction: -1 | 1) {
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= favoriteTools.value.length) {
+    return;
+  }
+
+  const reorderedFavorites = [...favoriteTools.value];
+  [reorderedFavorites[index], reorderedFavorites[targetIndex]] = [reorderedFavorites[targetIndex], reorderedFavorites[index]];
+  toolStore.updateFavoriteTools(reorderedFavorites);
+}
 </script>
 
 <template>
   <div class="pt-50px">
+    <h1 class="sr-only">
+      IT Tools — {{ $t('home.subtitle') }}
+    </h1>
+
     <div class="grid-wrapper">
       <transition name="height">
         <div v-if="toolStore.favoriteTools.length > 0">
-          <h3 class="mb-5px mt-25px text-neutral-400 font-500">
+          <h2 class="mb-5px mt-25px text-base text-neutral-400 font-500">
             {{ $t('home.categories.favoriteTools') }}
             <c-tooltip :tooltip="$t('home.categories.favoritesDndToolTip')">
-              <n-icon :component="IconDragDrop" size="18" />
+              <n-icon :component="IconDragDrop" size="18" aria-hidden="true" />
             </c-tooltip>
-          </h3>
+          </h2>
           <Draggable
             :list="favoriteTools"
             class="grid grid-cols-1 gap-12px lg:grid-cols-3 md:grid-cols-3 sm:grid-cols-2 xl:grid-cols-4"
@@ -37,25 +52,47 @@ function onUpdateFavoriteTools() {
             item-key="name"
             @end="onUpdateFavoriteTools"
           >
-            <template #item="{ element: tool }">
-              <ToolCard :tool="tool" />
+            <template #item="{ element: tool, index }">
+              <div>
+                <ToolCard :tool="tool" />
+                <div mt-1 flex justify-end gap-1>
+                  <c-button
+                    variant="text"
+                    size="small"
+                    :disabled="index === 0"
+                    :aria-label="`Move ${tool.name} earlier`"
+                    @click="moveFavorite(index, -1)"
+                  >
+                    <icon-mdi-arrow-left aria-hidden="true" />
+                  </c-button>
+                  <c-button
+                    variant="text"
+                    size="small"
+                    :disabled="index === favoriteTools.length - 1"
+                    :aria-label="`Move ${tool.name} later`"
+                    @click="moveFavorite(index, 1)"
+                  >
+                    <icon-mdi-arrow-right aria-hidden="true" />
+                  </c-button>
+                </div>
+              </div>
             </template>
           </Draggable>
         </div>
       </transition>
 
       <div v-if="toolStore.newTools.length > 0">
-        <h3 class="mb-5px mt-25px text-neutral-400 font-500">
+        <h2 class="mb-5px mt-25px text-base text-neutral-400 font-500">
           {{ t('home.categories.newestTools') }}
-        </h3>
+        </h2>
         <div class="grid grid-cols-1 gap-12px lg:grid-cols-3 md:grid-cols-3 sm:grid-cols-2 xl:grid-cols-4">
           <ToolCard v-for="tool in toolStore.newTools" :key="tool.name" :tool="tool" />
         </div>
       </div>
 
-      <h3 class="mb-5px mt-25px text-neutral-400 font-500">
+      <h2 class="mb-5px mt-25px text-base text-neutral-400 font-500">
         {{ $t('home.categories.allTools') }}
-      </h3>
+      </h2>
       <div class="grid grid-cols-1 gap-12px lg:grid-cols-3 md:grid-cols-3 sm:grid-cols-2 xl:grid-cols-4">
         <ToolCard v-for="tool in toolStore.tools" :key="tool.name" :tool="tool" />
       </div>

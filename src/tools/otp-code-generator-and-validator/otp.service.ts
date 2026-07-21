@@ -136,5 +136,6 @@ function buildKeyUri({
 }
 
 function generateSecret() {
-  return createToken({ length: 16, alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567' });
+  // RFC 4226 recommends a 160-bit shared secret. 32 Base32 symbols encode 160 bits.
+  return createToken({ length: 32, alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567' });
 }

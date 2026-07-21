@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Trash } from '@vicons/tabler';
-import { defaultTokenizerModelId, createDefaultChatMessages, createNewChatMessage } from './tokenizer.models';
-import { encodeWhitespace, getTokenizerDefinition, loadTokenizer, tokenizeText, tokenizerRegistry } from './tokenizer.service';
-import type { ChatMessage, RuntimeTokenizer, TokenizerInputMode, TokenizationResult } from './tokenizer.models';
+import { MAX_TOKENIZER_INPUT_LENGTH, createDefaultChatMessages, createNewChatMessage, defaultTokenizerModelId } from './tokenizer.models';
+import { encodeWhitespace, getTokenizerModel, tokenizerModels } from './tokenizer.registry';
+import type { ChatMessage, TokenizationResult, TokenizerInputMode, TokenizerWorkerResponse } from './tokenizer.models';
+import { assertTokenizerInputLength } from './tokenizer.service';
 import { useCopy } from '@/composable/copy';
 
 const modelId = ref(defaultTokenizerModelId);
@@ -14,9 +15,9 @@ const enableThinking = ref(true);
 const hoveredSegmentIndex = ref<number | null>(null);
 const loading = ref(false);
 const loadError = ref('');
-const runtimeTokenizer = shallowRef<RuntimeTokenizer | null>(null);
+const result = shallowRef<TokenizationResult | null>(null);
 const tokenIdsText = computed(() => (result.value?.tokens ?? []).map(({ id }) => id).join(', '));
-const availableModelsText = computed(() => tokenizerRegistry.map(({ label }) => label).join(', '));
+const availableModelsText = computed(() => tokenizerModels.map(({ label }) => label).join(', '));
 const { copy: copyTokenIds, isJustCopied } = useCopy({ source: tokenIdsText, createToast: false });
 
 const colors = [
@@ -33,13 +34,13 @@ const colors = [
 ];
 
 const tokenizerOptions = computed(() =>
-  tokenizerRegistry.map(({ id, label, group }) => ({
+  tokenizerModels.map(({ id, label, group }) => ({
     label: group === label ? label : `${group} / ${label}`,
     value: id,
   })),
 );
 
-const currentModel = computed(() => getTokenizerDefinition(modelId.value));
+const currentModel = computed(() => getTokenizerModel(modelId.value));
 const serializationError = computed(() => {
   if (inputMode.value !== 'chat') {
     return '';
@@ -66,41 +67,106 @@ const serializedInput = computed(() => {
   return currentModel.value.serializer(chatMessages.value, { addGenerationPrompt: true, enableThinking: enableThinking.value });
 });
 
-const result = computed<TokenizationResult | null>(() => {
-  if (!runtimeTokenizer.value || loadError.value || serializationError.value) {
-    return null;
+let tokenizerWorker: Worker | null = null;
+let tokenizationTimeoutId: number | undefined;
+let responseTimeoutId: number | undefined;
+let activeRequestId: number | null = null;
+let latestRequestId = 0;
+
+function disposeTokenizerWorker() {
+  window.clearTimeout(responseTimeoutId);
+  responseTimeoutId = undefined;
+  activeRequestId = null;
+  tokenizerWorker?.terminate();
+  tokenizerWorker = null;
+}
+
+function getTokenizerWorker() {
+  if (tokenizerWorker) {
+    return tokenizerWorker;
   }
 
-  return tokenizeText(runtimeTokenizer.value, serializedInput.value);
-});
+  tokenizerWorker = new Worker(new URL('./tokenizer.worker.ts', import.meta.url), { type: 'module' });
+  tokenizerWorker.onmessage = ({ data }: MessageEvent<TokenizerWorkerResponse>) => {
+    if (data.id !== latestRequestId) {
+      return;
+    }
 
-watch(modelId, async (nextModelId, _previousModelId, onCleanup) => {
-  let cancelled = false;
-  onCleanup(() => {
-    cancelled = true;
-  });
+    window.clearTimeout(responseTimeoutId);
+    responseTimeoutId = undefined;
+    activeRequestId = null;
 
-  loading.value = true;
+    if ('error' in data) {
+      result.value = null;
+      loadError.value = data.error;
+    }
+    else {
+      result.value = data.result;
+      loadError.value = '';
+    }
+    loading.value = false;
+  };
+  tokenizerWorker.onerror = () => {
+    disposeTokenizerWorker();
+    result.value = null;
+    loadError.value = 'Unable to start the tokenizer worker.';
+    loading.value = false;
+  };
+
+  return tokenizerWorker;
+}
+
+watch([modelId, serializedInput, serializationError], ([nextModelId, nextInput, nextSerializationError]) => {
+  const requestId = ++latestRequestId;
+  window.clearTimeout(tokenizationTimeoutId);
+  if (activeRequestId !== null) {
+    disposeTokenizerWorker();
+  }
+  result.value = null;
   loadError.value = '';
 
+  if (nextSerializationError || nextInput.length === 0) {
+    loading.value = false;
+    return;
+  }
+
   try {
-    const tokenizer = await loadTokenizer(nextModelId);
-    if (!cancelled) {
-      runtimeTokenizer.value = tokenizer;
-    }
+    assertTokenizerInputLength(nextInput);
   }
   catch (error) {
-    if (!cancelled) {
-      loadError.value = error instanceof Error ? error.message : 'Unable to load tokenizer.';
-      runtimeTokenizer.value = null;
-    }
+    loadError.value = error instanceof Error ? error.message : 'Tokenizer input is too large.';
+    loading.value = false;
+    return;
   }
-  finally {
-    if (!cancelled) {
+
+  loading.value = true;
+  tokenizationTimeoutId = window.setTimeout(() => {
+    try {
+      const worker = getTokenizerWorker();
+      activeRequestId = requestId;
+      responseTimeoutId = window.setTimeout(() => {
+        if (activeRequestId !== requestId) {
+          return;
+        }
+        disposeTokenizerWorker();
+        result.value = null;
+        loadError.value = 'Tokenization exceeded 25 seconds and was stopped.';
+        loading.value = false;
+      }, 25_000);
+      worker.postMessage({ id: requestId, modelId: nextModelId, serializedInput: nextInput });
+    }
+    catch (error) {
+      disposeTokenizerWorker();
+      loadError.value = error instanceof Error ? error.message : 'Unable to start the tokenizer worker.';
       loading.value = false;
     }
-  }
+  }, 180);
 }, { immediate: true });
+
+onBeforeUnmount(() => {
+  window.clearTimeout(tokenizationTimeoutId);
+  disposeTokenizerWorker();
+});
 
 watch(currentModel, (definition) => {
   if (!definition.supportedModes.includes(inputMode.value)) {
@@ -166,19 +232,18 @@ function getSegmentBackground(segmentIndex: number | null) {
       </div>
     </c-card>
 
-    <div grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]>
+    <div class="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
       <div flex flex-col gap-4>
         <c-card v-if="inputMode === 'text'">
           <c-input-text
             v-model:value="plainText"
             label="Input"
             placeholder="Enter text to tokenize..."
-            multiline
-            raw-text
-            autosize
+            :maxlength="MAX_TOKENIZER_INPUT_LENGTH"
+
             rows="8"
-            monospace
-            autofocus
+
+            raw-text autofocus autosize multiline monospace
           />
         </c-card>
 
@@ -187,7 +252,7 @@ function getSegmentBackground(segmentIndex: number | null) {
             <div
               v-for="(message, index) in chatMessages"
               :key="index"
-              grid gap-3 md:grid-cols-[160px,1fr,auto]
+              class="grid gap-3 md:grid-cols-[160px,1fr,auto]"
             >
               <c-select v-model:value="message.role" :options="['system', 'user', 'assistant']" />
 
@@ -200,6 +265,7 @@ function getSegmentBackground(segmentIndex: number | null) {
                 autosize
                 rows="3"
                 monospace
+                :maxlength="MAX_TOKENIZER_INPUT_LENGTH"
               />
 
               <div flex items-start justify-end>
@@ -224,12 +290,9 @@ function getSegmentBackground(segmentIndex: number | null) {
           <c-input-text
             :value="serializedInput"
             label="Serialized input"
-            readonly
-            multiline
-            raw-text
-            autosize
+
             rows="6"
-            monospace
+            multiline raw-text autosize monospace readonly
           />
         </c-card>
       </div>
@@ -237,7 +300,7 @@ function getSegmentBackground(segmentIndex: number | null) {
       <div flex flex-col gap-4>
         <c-card>
           <div flex items-center justify-between gap-4>
-            <n-statistic label="Token count" :value="result?.count ?? 0" />
+            <n-statistic data-test-id="token-count" label="Token count" :value="result?.count ?? 0" />
             <n-spin v-if="loading" size="small" />
           </div>
         </c-card>

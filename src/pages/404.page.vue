@@ -1,7 +1,15 @@
 <script setup lang="ts">
-import { useHead } from '@vueuse/head';
+import { useHead } from '@unhead/vue';
 
-useHead({ title: 'Page not found - IT Tools' });
+useHead({
+  title: 'Page not found - IT Tools',
+  meta: [
+    {
+      name: 'robots',
+      content: 'noindex, nofollow',
+    },
+  ],
+});
 </script>
 
 <template>

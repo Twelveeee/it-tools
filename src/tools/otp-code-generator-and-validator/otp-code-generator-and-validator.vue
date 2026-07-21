@@ -62,7 +62,7 @@ const secretValidationRules = [
     >
       <template #suffix>
         <c-tooltip tooltip="Generate a new random secret">
-          <c-button circle variant="text" size="small" @click="refreshSecret">
+          <c-button circle variant="text" size="small" aria-label="Generate a new random secret" @click="refreshSecret">
             <icon-mdi-refresh />
           </c-button>
         </c-tooltip>

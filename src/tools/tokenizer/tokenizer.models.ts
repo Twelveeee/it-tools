@@ -2,6 +2,8 @@ export type TokenizerFamily = 'openai' | 'qwen3' | 'qwen3_5' | 'deepseek';
 export type TokenizerInputMode = 'text' | 'chat';
 export type ChatMessageRole = 'system' | 'user' | 'assistant';
 
+export const MAX_TOKENIZER_INPUT_LENGTH = 50_000;
+
 export interface ChatMessage {
   role: ChatMessageRole
   content: string
@@ -35,16 +37,33 @@ export interface RuntimeTokenizer {
   decode: (tokenIds: number[]) => string
 }
 
-export interface TokenizerModelDefinition {
+export interface TokenizerModelMetadata {
   id: string
   label: string
   family: TokenizerFamily
   group: string
   supportsThinking: boolean
   supportedModes: TokenizerInputMode[]
-  loader: () => Promise<RuntimeTokenizer>
   serializer: (messages: ChatMessage[], options?: SerializeChatOptions) => string
 }
+
+export interface TokenizerModelDefinition extends TokenizerModelMetadata {
+  loader: () => Promise<RuntimeTokenizer>
+}
+
+export interface TokenizerWorkerRequest {
+  id: number
+  modelId: string
+  serializedInput: string
+}
+
+export type TokenizerWorkerResponse = {
+  id: number
+  result: TokenizationResult
+} | {
+  error: string
+  id: number
+};
 
 export const defaultTokenizerModelId = 'gpt-5.4';
 

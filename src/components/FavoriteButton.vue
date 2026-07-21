@@ -29,6 +29,8 @@ function toggleFavorite(event: MouseEvent) {
       variant="text"
       circle
       :type="buttonType"
+      :aria-label="isFavorite ? $t('favoriteButton.remove') : $t('favoriteButton.add')"
+      :aria-pressed="isFavorite"
       :style="{ opacity: isFavorite ? 1 : 0.2 }"
       @click="toggleFavorite"
     >

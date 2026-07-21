@@ -8,7 +8,11 @@ function getHeaders({ array }: { array: Record<string, unknown>[] }): string[] {
   return Array.from(headers);
 }
 
-function serializeValue(value: unknown): string {
+function protectSpreadsheetFormula(value: string): string {
+  return /^[\t\r\n ]*[=+\-@]/.test(value) ? `'${value}` : value;
+}
+
+function serializeValue(value: unknown, { protectFormulas = true } = {}): string {
   if (value === null) {
     return 'null';
   }
@@ -17,19 +21,21 @@ function serializeValue(value: unknown): string {
     return '';
   }
 
-  const valueAsString = String(value).replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/"/g, '\\"');
+  const valueAsString = protectFormulas ? protectSpreadsheetFormula(String(value)) : String(value);
+  const escapedValue = valueAsString.replace(/"/g, '""');
 
-  if (valueAsString.includes(',')) {
-    return `"${valueAsString}"`;
+  if (/[",\r\n]/.test(valueAsString)) {
+    return `"${escapedValue}"`;
   }
 
-  return valueAsString;
+  return escapedValue;
 }
 
-function convertArrayToCsv({ array }: { array: Record<string, unknown>[] }): string {
+function convertArrayToCsv({ array, protectFormulas = true }: { array: Record<string, unknown>[]; protectFormulas?: boolean }): string {
   const headers = getHeaders({ array });
 
-  const rows = array.map(item => headers.map(header => serializeValue(item[header])));
+  const serializedHeaders = headers.map(header => serializeValue(header, { protectFormulas }));
+  const rows = array.map(item => headers.map(header => serializeValue(item[header], { protectFormulas })));
 
-  return [headers.join(','), ...rows].join('\n');
+  return [serializedHeaders.join(','), ...rows.map(row => row.join(','))].join('\r\n');
 }

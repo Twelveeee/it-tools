@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia';
+import Fuse from 'fuse.js';
 import _ from 'lodash';
 import type { PaletteOption } from './command-palette.types';
 import { useToolStore } from '@/tools/tools.store';
-import { useFuzzySearch } from '@/composable/fuzzySearch';
 import { useStyleStore } from '@/stores/style.store';
 
 import SunIcon from '~icons/mdi/white-balance-sunny';
@@ -15,21 +15,21 @@ export const useCommandPaletteStore = defineStore('command-palette', () => {
   const router = useRouter();
   const searchPrompt = ref('');
 
-  const toolsOptions = toolStore.tools.map(tool => ({
-    ...tool,
-    to: tool.path,
-    toolCategory: tool.category,
-    category: 'Tools',
-  }));
-
-  const searchOptions: PaletteOption[] = [
-    ...toolsOptions,
+  const searchOptions = computed<PaletteOption[]>(() => [
+    ...toolStore.tools.map(tool => ({
+      ...tool,
+      to: tool.path,
+      toolCategory: tool.category,
+      category: 'Tools',
+    })),
     {
       name: 'Random tool',
       description: 'Get a random tool from the list.',
       action: () => {
-        const { path } = _.sample(toolStore.tools)!;
-        router.push(path);
+        const tool = _.sample(toolStore.tools);
+        if (tool) {
+          router.push(tool.path);
+        }
       },
       icon: DiceIcon,
       category: 'Tools',
@@ -52,19 +52,18 @@ export const useCommandPaletteStore = defineStore('command-palette', () => {
       keywords: ['about', 'learn', 'more', 'info', 'information'],
       icon: InfoIcon,
     },
-  ];
+  ]);
 
-  const { searchResult } = useFuzzySearch({
-    search: searchPrompt,
-    data: searchOptions,
-    options: {
-      keys: [{ name: 'name', weight: 2 }, 'description', 'keywords', 'category'],
-      threshold: 0.3,
-    },
+  const filteredSearchResult = computed(() => {
+    const options = searchPrompt.value === ''
+      ? searchOptions.value
+      : new Fuse(searchOptions.value, {
+        keys: [{ name: 'name', weight: 2 }, 'description', 'keywords', 'category'],
+        threshold: 0.3,
+      }).search(searchPrompt.value).map(({ item }) => item);
+
+    return _.chain(options).groupBy('category').mapValues(categoryOptions => _.take(categoryOptions, 5)).value();
   });
-
-  const filteredSearchResult = computed(() =>
-    _.chain(searchResult.value).groupBy('category').mapValues(categoryOptions => _.take(categoryOptions, 5)).value());
 
   return {
     filteredSearchResult,

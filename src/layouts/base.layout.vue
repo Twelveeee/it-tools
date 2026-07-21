@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { NIcon, useThemeVars } from 'naive-ui';
+import { defineAsyncComponent } from 'vue';
 
 import { RouterLink } from 'vue-router';
 import { Home2, Menu2 } from '@vicons/tabler';
@@ -18,6 +19,9 @@ const themeVars = useThemeVars();
 const styleStore = useStyleStore();
 const version = config.app.version;
 const commitSha = config.app.lastCommitSha.slice(0, 7);
+const DemoLink = import.meta.env.DEV
+  ? defineAsyncComponent(() => import('@/ui/demo/demo-link.vue'))
+  : null;
 const { t } = useI18n();
 
 const toolStore = useToolStore();
@@ -90,11 +94,7 @@ const tools = computed<ToolCategory[]>(() => [
           </c-button>
         </c-tooltip>
 
-        <c-tooltip :tooltip="$t('home.uiLib')" position="bottom">
-          <c-button v-if="config.app.env === 'development'" to="/c-lib" circle variant="text" :aria-label="$t('home.uiLib')">
-            <icon-mdi:brush-variant text-20px />
-          </c-button>
-        </c-tooltip>
+        <DemoLink v-if="DemoLink" />
 
         <command-palette />
 

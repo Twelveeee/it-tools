@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import process from 'node:process';
 import { URL, fileURLToPath } from 'node:url';
 
 import VueI18n from '@intlify/unplugin-vue-i18n/vite';
@@ -16,10 +17,21 @@ import markdown from 'vite-plugin-vue-markdown';
 import svgLoader from 'vite-svg-loader';
 import { configDefaults } from 'vitest/config';
 
-const baseUrl = process.env.BASE_URL ?? '/';
+const configuredBaseUrl = process.env.BASE_URL ?? '/';
+const baseUrl = configuredBaseUrl.endsWith('/') ? configuredBaseUrl : `${configuredBaseUrl}/`;
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  worker: {
+    format: 'es',
+    rollupOptions: {
+      output: {
+        assetFileNames: 'assets/worker-[name]-[hash][extname]',
+        chunkFileNames: 'assets/worker-[name]-[hash].js',
+        entryFileNames: 'assets/worker-[name]-[hash].js',
+      },
+    },
+  },
   plugins: [
     VueI18n({
       runtimeOnly: true,
@@ -60,32 +72,59 @@ export default defineConfig({
         name: 'IT Tools',
         description: 'Aggregated set of useful tools for developers.',
         display: 'standalone',
-        lang: 'fr-FR',
+        lang: 'en',
+        scope: baseUrl,
         start_url: `${baseUrl}?utm_source=pwa&utm_medium=pwa`,
         orientation: 'any',
         theme_color: '#18a058',
         background_color: '#f1f5f9',
         icons: [
           {
-            src: '/favicon-16x16.png',
+            src: 'favicon-16x16.png',
             type: 'image/png',
             sizes: '16x16',
           },
           {
-            src: '/favicon-32x32.png',
+            src: 'favicon-32x32.png',
             type: 'image/png',
             sizes: '32x32',
           },
           {
-            src: '/android-chrome-192x192.png',
+            src: 'android-chrome-192x192.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: '/android-chrome-512x512.png',
+            src: 'android-chrome-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
+          },
+        ],
+      },
+      workbox: {
+        cleanupOutdatedCaches: true,
+        globPatterns: [
+          'index.html',
+          'assets/app-*.js',
+          'assets/index-*.css',
+          'assets/workbox-window*.js',
+          'favicon.ico',
+          'apple-touch-icon.png',
+          'safari-pinned-tab.svg',
+        ],
+        runtimeCaching: [
+          {
+            urlPattern: /\/assets\/.*\.(?:css|js|ttf|woff2?)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'it-tools-assets',
+              cacheableResponse: { statuses: [0, 200] },
+              expiration: {
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+                maxEntries: 150,
+              },
+            },
           },
         ],
       },
@@ -112,5 +151,10 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/app-[hash].js',
+      },
+    },
   },
 });

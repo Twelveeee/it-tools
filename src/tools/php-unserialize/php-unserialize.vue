@@ -23,9 +23,14 @@ type PhpUnserializeMode = typeof outputModeOptions[number];
 const inputElement = ref<InstanceType<typeof CInputText>>();
 
 const direction = useStorage<PhpTransformDirection>('php-unserialize:direction', 'unserialize');
-const rawPhpSerialized = useStorage('php-unserialize:input', defaultInput);
-const rawJsonInput = useStorage('php-unserialize:json-input', defaultJsonInput);
+const rawPhpSerialized = ref(defaultInput);
+const rawJsonInput = ref(defaultJsonInput);
 const outputMode = useStorage<PhpUnserializeMode>('php-unserialize:mode', 'print_r');
+
+onMounted(() => {
+  localStorage.removeItem('php-unserialize:input');
+  localStorage.removeItem('php-unserialize:json-input');
+});
 
 const input = computed({
   get: () => direction.value === 'serialize' ? rawJsonInput.value : rawPhpSerialized.value,

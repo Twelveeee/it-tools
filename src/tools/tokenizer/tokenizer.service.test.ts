@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildHuggingFaceAssetUrl, buildOpenAIEncodingUrl, fetchHuggingFaceTokenizerAssets, getTokenizerDefinition, tokenizeText } from './tokenizer.service';
+import { buildHuggingFaceAssetUrl, fetchHuggingFaceTokenizerAssets, getTokenizerDefinition, tokenizeText } from './tokenizer.service';
+import { MAX_TOKENIZER_INPUT_LENGTH } from './tokenizer.models';
 
 describe('tokenizer service', () => {
   it('maps GPT-5.4 aliases to the OpenAI tokenizer family', () => {
@@ -14,7 +15,6 @@ describe('tokenizer service', () => {
   it('builds Hugging Face resolve URLs for tokenizer assets', () => {
     expect(buildHuggingFaceAssetUrl('Qwen/Qwen3-8B', 'tokenizer.json')).toEqual('https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer.json');
     expect(buildHuggingFaceAssetUrl('Qwen/Qwen3.5-9B', 'tokenizer_config.json')).toEqual('https://huggingface.co/Qwen/Qwen3.5-9B/resolve/main/tokenizer_config.json');
-    expect(buildOpenAIEncodingUrl('o200k_base')).toEqual('https://tiktoken.pages.dev/js/o200k_base.json');
   });
 
   it('fetches both Hugging Face assets via resolve URLs', async () => {
@@ -24,8 +24,16 @@ describe('tokenizer service', () => {
 
     await fetchHuggingFaceTokenizerAssets(fetcher as unknown as typeof fetch, 'Qwen/Qwen3-8B');
 
-    expect(fetcher).toHaveBeenNthCalledWith(1, 'https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer.json');
-    expect(fetcher).toHaveBeenNthCalledWith(2, 'https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer_config.json');
+    expect(fetcher).toHaveBeenNthCalledWith(
+      1,
+      'https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer.json',
+      expect.objectContaining({ cache: 'force-cache', credentials: 'omit' }),
+    );
+    expect(fetcher).toHaveBeenNthCalledWith(
+      2,
+      'https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer_config.json',
+      expect.objectContaining({ cache: 'force-cache', credentials: 'omit' }),
+    );
   });
 
   it('reconstructs text segments without breaking emoji or CJK graphemes', () => {
@@ -43,5 +51,15 @@ describe('tokenizer service', () => {
     expect(result.count).toBeGreaterThan(0);
     expect(result.segments.map(({ text }) => text).join('')).toEqual('Hello🙂世界\n');
     expect(result.tokens).toHaveLength(result.count);
+  });
+
+  it('rejects oversized input before encoding it', () => {
+    const encode = vi.fn(() => []);
+
+    expect(() => tokenizeText({
+      encode,
+      decode: () => '',
+    }, 'a'.repeat(MAX_TOKENIZER_INPUT_LENGTH + 1))).toThrow(/limited to 50,000 characters/);
+    expect(encode).not.toHaveBeenCalled();
   });
 });

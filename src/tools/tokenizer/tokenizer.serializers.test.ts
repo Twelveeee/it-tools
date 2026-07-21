@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { serializeDeepSeekChat, serializeOpenAIChat, serializeQwen3Chat, serializeQwen35Chat } from './tokenizer.serializers';
+import { serializeDeepSeekChat, serializeOpenAIChat, serializeQwen35Chat, serializeQwen3Chat } from './tokenizer.serializers';
 import type { ChatMessage } from './tokenizer.models';
 
 const chatMessages: ChatMessage[] = [

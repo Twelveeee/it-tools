@@ -28,9 +28,16 @@ const props = withDefaults(
     type?: 'text' | 'password'
     multiline?: boolean
     rows?: number | string
+    maxlength?: number | string
     autosize?: boolean
     autofocus?: boolean
     monospace?: boolean
+    ariaLabel?: string
+    ariaControls?: string
+    ariaActivedescendant?: string
+    ariaExpanded?: boolean
+    ariaDescribedby?: string
+    inputRole?: string
   }>(),
   {
     value: '',
@@ -55,16 +62,23 @@ const props = withDefaults(
     type: 'text',
     multiline: false,
     rows: 3,
+    maxlength: undefined,
     autosize: false,
     autofocus: false,
     monospace: false,
+    ariaLabel: undefined,
+    ariaControls: undefined,
+    ariaActivedescendant: undefined,
+    ariaExpanded: undefined,
+    ariaDescribedby: undefined,
+    inputRole: undefined,
   },
 );
 const emit = defineEmits(['update:value']);
 const value = useVModel(props, 'value', emit);
 const showPassword = ref(false);
 
-const { id, placeholder, label, validationRules, labelPosition, labelWidth, labelAlign, autosize, readonly, disabled, clearable, type, multiline, rows, rawText, autofocus, monospace } = toRefs(props);
+const { id, placeholder, label, validationRules, labelPosition, labelWidth, labelAlign, autosize, readonly, disabled, clearable, type, multiline, rows, maxlength, rawText, autofocus, monospace } = toRefs(props);
 
 const validation
   = props.validation
@@ -76,6 +90,11 @@ const validation
 
 const theme = useTheme();
 const appTheme = useAppTheme();
+const feedbackId = computed(() => `${id.value}-feedback`);
+const describedBy = computed(() => [
+  props.ariaDescribedby,
+  !validation.isValid ? feedbackId.value : undefined,
+].filter(Boolean).join(' ') || undefined);
 
 const textareaRef = ref<HTMLTextAreaElement>();
 const inputRef = ref<HTMLInputElement>();
@@ -171,6 +190,15 @@ defineExpose({
           :autocorrect="autocorrect ?? (rawText ? 'off' : undefined)"
           :spellcheck="spellcheck ?? (rawText ? false : undefined)"
           :rows="rows"
+          :maxlength="maxlength"
+          :autofocus="autofocus"
+          :role="inputRole"
+          :aria-label="ariaLabel"
+          :aria-controls="ariaControls"
+          :aria-activedescendant="ariaActivedescendant"
+          :aria-expanded="ariaExpanded"
+          :aria-describedby="describedBy"
+          :aria-invalid="!validation.isValid || undefined"
         />
 
         <input
@@ -192,19 +220,28 @@ defineExpose({
           :autocomplete="autocomplete ?? (rawText ? 'off' : undefined)"
           :autocorrect="autocorrect ?? (rawText ? 'off' : undefined)"
           :spellcheck="spellcheck ?? (rawText ? false : undefined)"
+          :maxlength="maxlength"
+          :autofocus="autofocus"
+          :role="inputRole"
+          :aria-label="ariaLabel"
+          :aria-controls="ariaControls"
+          :aria-activedescendant="ariaActivedescendant"
+          :aria-expanded="ariaExpanded"
+          :aria-describedby="describedBy"
+          :aria-invalid="!validation.isValid || undefined"
         >
 
-        <c-button v-if="clearable && value" variant="text" circle size="small" @click="value = ''">
+        <c-button v-if="clearable && value" variant="text" circle size="small" aria-label="Clear input" @click="value = ''">
           <icon-mdi-close />
         </c-button>
 
-        <c-button v-if="type === 'password'" variant="text" circle size="small" @click="showPassword = !showPassword">
+        <c-button v-if="type === 'password'" variant="text" circle size="small" :aria-label="showPassword ? 'Hide password' : 'Show password'" @click="showPassword = !showPassword">
           <icon-mdi-eye v-if="!showPassword" />
           <icon-mdi-eye-off v-if="showPassword" />
         </c-button>
         <slot name="suffix" />
       </div>
-      <span v-if="!validation.isValid" class="feedback"> {{ validation.message }} </span>
+      <span v-if="!validation.isValid" :id="feedbackId" class="feedback" role="alert"> {{ validation.message }} </span>
     </div>
   </div>
 </template>

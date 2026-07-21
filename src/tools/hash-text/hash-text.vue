@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { lib } from 'crypto-js';
-import { MD5, RIPEMD160, SHA1, SHA224, SHA256, SHA3, SHA384, SHA512, enc } from 'crypto-js';
+import { MD5, RIPEMD160, SHA1, SHA224, SHA256, SHA384, SHA512, enc } from 'crypto-js';
 
 import InputCopyable from '../../components/InputCopyable.vue';
-import { convertHexToBin } from './hash-text.service';
+import { KECCAK_512_LABEL, computeKeccak512, convertHexToBin } from './hash-text.service';
 import { useQueryParam } from '@/composable/queryParams';
 
 const algos = {
@@ -13,7 +13,7 @@ const algos = {
   SHA224,
   SHA512,
   SHA384,
-  SHA3,
+  [KECCAK_512_LABEL]: computeKeccak512,
   RIPEMD160,
 } as const;
 
@@ -40,6 +40,10 @@ const hashText = (algo: AlgoNames, value: string) => formatWithEncoding(algos[al
       <c-input-text v-model:value="clearText" multiline raw-text placeholder="Your string to hash..." rows="3" autosize autofocus label="Your text to hash:" />
 
       <n-divider />
+
+      <c-alert mb-4 title="Keccak is not NIST SHA-3">
+        CryptoJS exposes its Keccak implementation as “SHA3”. It is shown here as Keccak-512 so its digest is not mistaken for the standardized SHA3-512 algorithm.
+      </c-alert>
 
       <c-select
         v-model:value="encoding"

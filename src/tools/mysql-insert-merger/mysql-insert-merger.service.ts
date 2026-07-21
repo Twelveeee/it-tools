@@ -137,7 +137,7 @@ function parseInsertStatement(statement: string): ParsedInsert {
 
   const columnsEnd = findMatchingParen(statement, columnsStart);
   const columns = splitTopLevelComma(statement.slice(columnsStart + 1, columnsEnd)).map(part => part.trim());
-  if (columns.some(column => column === '')) {
+  if (columns.includes('')) {
     throw new Error('Expected non-empty column names in INSERT INTO column list.');
   }
 

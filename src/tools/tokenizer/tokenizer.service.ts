@@ -1,5 +1,6 @@
-import { serializeDeepSeekChat, serializeOpenAIChat, serializeQwen3Chat, serializeQwen35Chat } from './tokenizer.serializers';
 import type { RuntimeTokenizer, TokenizationResult, TokenizerModelDefinition, TokenizerSegment, TokenizerToken } from './tokenizer.models';
+import { MAX_TOKENIZER_INPUT_LENGTH } from './tokenizer.models';
+import { tokenizerModels } from './tokenizer.registry';
 
 const openAISpecialTokens = {
   '<|im_start|>': 200264,
@@ -8,6 +9,7 @@ const openAISpecialTokens = {
 };
 
 const tokenizerCache = new Map<string, Promise<RuntimeTokenizer>>();
+const tokenizerFetchTimeoutMs = 20_000;
 
 const Segmenter = (globalThis.Intl as typeof Intl & { Segmenter?: new (locales?: string | string[], options?: { granularity: string }) => { segment: (input: string) => ArrayLike<{ segment: string }> } })?.Segmenter;
 const graphemeSegmenter = Segmenter
@@ -22,55 +24,52 @@ function splitGraphemes(value: string) {
   return Array.from(graphemeSegmenter.segment(value), ({ segment }) => segment);
 }
 
-export function encodeWhitespace(value: string) {
-  return value
-    .split(' ').join('⋅')
-    .split('\t').join('→')
-    .split('\f').join('\\f\f')
-    .split('\b').join('\\b\b')
-    .split('\v').join('\\v\v')
-    .split('\r').join('\\r\r')
-    .split('\n').join('\\n\n')
-    .split('\\r\r\\n\n').join('\\r\\n\r\n');
-}
-
 export function buildHuggingFaceAssetUrl(modelId: string, assetName: 'tokenizer.json' | 'tokenizer_config.json') {
   return `https://huggingface.co/${modelId}/resolve/main/${assetName}`;
 }
 
-export function buildOpenAIEncodingUrl(encodingName: 'o200k_base') {
-  return `https://tiktoken.pages.dev/js/${encodingName}.json`;
+export function assertTokenizerInputLength(serializedInput: string) {
+  if (serializedInput.length > MAX_TOKENIZER_INPUT_LENGTH) {
+    throw new RangeError(`Tokenizer input is limited to ${MAX_TOKENIZER_INPUT_LENGTH.toLocaleString()} characters.`);
+  }
 }
 
 export async function fetchHuggingFaceTokenizerAssets(fetcher: typeof fetch, modelId: string) {
-  const [tokenizerResponse, configResponse] = await Promise.all([
-    fetcher(buildHuggingFaceAssetUrl(modelId, 'tokenizer.json')),
-    fetcher(buildHuggingFaceAssetUrl(modelId, 'tokenizer_config.json')),
-  ]);
+  const abortController = new AbortController();
+  const timeoutId = globalThis.setTimeout(() => abortController.abort(), tokenizerFetchTimeoutMs);
+  const requestOptions: RequestInit = {
+    cache: 'force-cache',
+    credentials: 'omit',
+    signal: abortController.signal,
+  };
 
-  if (!tokenizerResponse.ok || !configResponse.ok) {
-    throw new Error(`Failed to load tokenizer assets for ${modelId}.`);
+  try {
+    const [tokenizerResponse, configResponse] = await Promise.all([
+      fetcher(buildHuggingFaceAssetUrl(modelId, 'tokenizer.json'), requestOptions),
+      fetcher(buildHuggingFaceAssetUrl(modelId, 'tokenizer_config.json'), requestOptions),
+    ]);
+
+    if (!tokenizerResponse.ok || !configResponse.ok) {
+      throw new Error(`Failed to load tokenizer assets for ${modelId}.`);
+    }
+
+    const [tokenizerJson, tokenizerConfig] = await Promise.all([
+      tokenizerResponse.json(),
+      configResponse.json(),
+    ]);
+
+    return { tokenizerJson, tokenizerConfig };
   }
-
-  const [tokenizerJson, tokenizerConfig] = await Promise.all([
-    tokenizerResponse.json(),
-    configResponse.json(),
-  ]);
-
-  return { tokenizerJson, tokenizerConfig };
+  finally {
+    globalThis.clearTimeout(timeoutId);
+  }
 }
 
 export async function createOpenAITokenizer(): Promise<RuntimeTokenizer> {
-  const [{ Tiktoken }, response] = await Promise.all([
+  const [{ Tiktoken }, { default: ranks }] = await Promise.all([
     import('js-tiktoken/lite'),
-    fetch(buildOpenAIEncodingUrl('o200k_base')),
+    import('js-tiktoken/ranks/o200k_base'),
   ]);
-
-  if (!response.ok) {
-    throw new Error('Failed to load OpenAI tokenizer ranks.');
-  }
-
-  const ranks = await response.json();
   const tokenizer = new Tiktoken(ranks, openAISpecialTokens);
 
   return {
@@ -136,6 +135,7 @@ function createSegmentAccumulator(tokens: number[], inputText: string, decode: R
 }
 
 export function tokenizeText(runtimeTokenizer: RuntimeTokenizer, serializedInput: string): TokenizationResult {
+  assertTokenizerInputLength(serializedInput);
   const tokenIds = runtimeTokenizer.encode(serializedInput);
   const { segments, tokenEntries } = createSegmentAccumulator(tokenIds, serializedInput, runtimeTokenizer.decode);
 
@@ -147,68 +147,12 @@ export function tokenizeText(runtimeTokenizer: RuntimeTokenizer, serializedInput
   };
 }
 
-export const tokenizerRegistry: TokenizerModelDefinition[] = [
-  {
-    id: 'gpt-5.4',
-    label: 'GPT-5.4',
-    family: 'openai',
-    group: 'OpenAI',
-    supportsThinking: false,
-    supportedModes: ['text', 'chat'],
-    loader: createOpenAITokenizer,
-    serializer: serializeOpenAIChat,
-  },
-  {
-    id: 'gpt-5.4-mini',
-    label: 'GPT-5.4 Mini',
-    family: 'openai',
-    group: 'OpenAI',
-    supportsThinking: false,
-    supportedModes: ['text', 'chat'],
-    loader: createOpenAITokenizer,
-    serializer: serializeOpenAIChat,
-  },
-  {
-    id: 'gpt-5.4-nano',
-    label: 'GPT-5.4 Nano',
-    family: 'openai',
-    group: 'OpenAI',
-    supportsThinking: false,
-    supportedModes: ['text', 'chat'],
-    loader: createOpenAITokenizer,
-    serializer: serializeOpenAIChat,
-  },
-  {
-    id: 'Qwen/Qwen3-8B',
-    label: 'Qwen 3',
-    family: 'qwen3',
-    group: 'Qwen',
-    supportsThinking: true,
-    supportedModes: ['text', 'chat'],
-    loader: async () => createQwenTokenizer('Qwen/Qwen3-8B'),
-    serializer: serializeQwen3Chat,
-  },
-  {
-    id: 'Qwen/Qwen3.5-9B',
-    label: 'Qwen 3.5',
-    family: 'qwen3_5',
-    group: 'Qwen',
-    supportsThinking: true,
-    supportedModes: ['text', 'chat'],
-    loader: async () => createQwenTokenizer('Qwen/Qwen3.5-9B'),
-    serializer: serializeQwen35Chat,
-  },
-  {
-    id: 'deepseek-ai/DeepSeek-R1',
-    label: 'DeepSeek',
-    family: 'deepseek',
-    group: 'DeepSeek',
-    supportsThinking: true,
-    supportedModes: ['text', 'chat'],
-    loader: async () => createQwenTokenizer('deepseek-ai/DeepSeek-R1'),
-    serializer: serializeDeepSeekChat,
-  },
-];
+export const tokenizerRegistry: TokenizerModelDefinition[] = tokenizerModels.map(definition => ({
+  ...definition,
+  loader: definition.family === 'openai'
+    ? createOpenAITokenizer
+    : async () => createQwenTokenizer(definition.id),
+}));
 
 export function getTokenizerDefinition(modelId: string) {
   const definition = tokenizerRegistry.find(({ id }) => id === modelId);
@@ -221,9 +165,16 @@ export function getTokenizerDefinition(modelId: string) {
 }
 
 export async function loadTokenizer(modelId: string) {
-  if (!tokenizerCache.has(modelId)) {
-    tokenizerCache.set(modelId, getTokenizerDefinition(modelId).loader());
+  const definition = getTokenizerDefinition(modelId);
+  const cacheKey = definition.family === 'openai' ? 'openai:o200k_base' : modelId;
+
+  if (!tokenizerCache.has(cacheKey)) {
+    const tokenizerPromise = definition.loader().catch((error) => {
+      tokenizerCache.delete(cacheKey);
+      throw error;
+    });
+    tokenizerCache.set(cacheKey, tokenizerPromise);
   }
 
-  return tokenizerCache.get(modelId)!;
+  return tokenizerCache.get(cacheKey)!;
 }

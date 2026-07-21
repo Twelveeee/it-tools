@@ -1,6 +1,6 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
-import { createHead } from '@vueuse/head';
+import { createHead } from '@unhead/vue/client';
 
 import { registerSW } from 'virtual:pwa-register';
 import shadow from 'vue-shadow-dom';

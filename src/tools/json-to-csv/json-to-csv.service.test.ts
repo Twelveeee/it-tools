@@ -13,77 +13,38 @@ describe('json-to-csv service', () => {
   });
 
   describe('convertArrayToCsv', () => {
-    it('converts an array of objects to a CSV string', () => {
-      const array = [
-        { a: 1, b: 2 },
-        { a: 3, b: 4 },
-
-      ];
-
-      expect(convertArrayToCsv({ array })).toMatchInlineSnapshot(`
-        "a,b
-        1,2
-        3,4"
-      `);
+    it('converts an array of objects to RFC 4180 CSV', () => {
+      expect(convertArrayToCsv({ array: [{ a: 1, b: 2 }, { a: 3, b: 4 }] })).toBe('a,b\r\n1,2\r\n3,4');
     });
 
-    it('converts an array of objects with different keys to a CSV string', () => {
-      const array = [
-        { a: 1, b: 2 },
-        { a: 3, c: 4 },
-      ];
-
-      expect(convertArrayToCsv({ array })).toMatchInlineSnapshot(`
-        "a,b,c
-        1,2,
-        3,,4"
-      `);
+    it('supports records with different keys', () => {
+      expect(convertArrayToCsv({ array: [{ a: 1, b: 2 }, { a: 3, c: 4 }] })).toBe('a,b,c\r\n1,2,\r\n3,,4');
     });
 
-    it('when a value is null, it is converted to the string "null"', () => {
-      const array = [
-        { a: null, b: 2 },
-      ];
-
-      expect(convertArrayToCsv({ array })).toMatchInlineSnapshot(`
-        "a,b
-        null,2"
-      `);
+    it('serializes null and undefined consistently', () => {
+      expect(convertArrayToCsv({ array: [{ a: null, b: undefined }] })).toBe('a,b\r\nnull,');
     });
 
-    it('when a value is undefined, it is converted to an empty string', () => {
-      const array = [
-        { a: undefined, b: 2 },
-        { b: 3 },
-      ];
-
-      expect(convertArrayToCsv({ array })).toMatchInlineSnapshot(`
-        "a,b
-        ,2
-        ,3"
-      `);
+    it('quotes commas, line breaks, and double quotes', () => {
+      expect(convertArrayToCsv({ array: [{ a: 'hello, "world"\nagain' }] }))
+        .toBe('a\r\n"hello, ""world""\nagain"');
     });
 
-    it('when a value contains a comma, it is wrapped in double quotes', () => {
-      const array = [
-        { a: 'hello, world', b: 2 },
-      ];
-
-      expect(convertArrayToCsv({ array })).toMatchInlineSnapshot(`
-        "a,b
-        \\"hello, world\\",2"
-      `);
+    it('protects spreadsheet formulas by default', () => {
+      expect(convertArrayToCsv({ array: [{ value: '=HYPERLINK("https://example.com")' }] }))
+        .toBe('value\r\n"\'=HYPERLINK(""https://example.com"")"');
     });
 
-    it('when a value contains a double quote, it is escaped with another double quote', () => {
-      const array = [
-        { a: 'hello "world"', b: 2 },
-      ];
+    it('allows formula protection to be disabled explicitly', () => {
+      expect(convertArrayToCsv({ array: [{ value: '=1+1' }], protectFormulas: false })).toBe('value\r\n=1+1');
+    });
 
-      expect(convertArrayToCsv({ array })).toMatchInlineSnapshot(`
-        "a,b
-        hello \\\\\\"world\\\\\\",2"
-      `);
+    it('escapes headers that contain CSV control characters', () => {
+      expect(convertArrayToCsv({ array: [{ 'a,b': 1 }] })).toBe('"a,b"\r\n1');
+    });
+
+    it('protects formula-like headers and values after line breaks', () => {
+      expect(convertArrayToCsv({ array: [{ '=FORMULA': '\n@command' }] })).toBe('\'=FORMULA\r\n"\'\n@command"');
     });
   });
 });
