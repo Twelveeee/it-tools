@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { getMimeTypeFromBase64 } from './downloadBase64';
+import { getMimeTypeFromBase64, getMimeTypeFromExtension } from './downloadBase64';
 
 describe('downloadBase64', () => {
+  it('looks up a MIME type from a file extension', () => {
+    expect(getMimeTypeFromExtension('svg')).toBe('image/svg+xml');
+  });
+
   describe('getMimeTypeFromBase64', () => {
     it('when the base64 string has a data URI, it returns the mime type', () => {
       expect(getMimeTypeFromBase64({ base64String: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA' })).to.deep.equal({ mimeType: 'image/png' });

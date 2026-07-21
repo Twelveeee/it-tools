@@ -12,6 +12,21 @@ const tooltipText = computed(() => isJustCopied.value ? 'Copied!' : initialText)
 
 <template>
   <c-tooltip :tooltip="tooltipText">
-    <span cursor-pointer font-mono @click="copy()">{{ value }}</span>
+    <button type="button" class="span-copyable" :aria-label="tooltipText" @click="copy()">
+      {{ value }}
+    </button>
   </c-tooltip>
 </template>
+
+<style scoped>
+.span-copyable {
+  all: unset;
+  cursor: pointer;
+  font-family: monospace;
+}
+
+.span-copyable:focus-visible {
+  outline: 1px solid currentcolor;
+  outline-offset: 2px;
+}
+</style>

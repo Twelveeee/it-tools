@@ -1,19 +1,33 @@
 <script setup lang="ts">
-import { generateKeyPair } from './rsa-key-pair-generator.service';
+import {
+  DEFAULT_RSA_BITS,
+  MAX_RSA_BITS,
+  MIN_RSA_BITS,
+  generateKeyPair,
+  validateRsaBits,
+} from './rsa-key-pair-generator.service';
 import TextareaCopyable from '@/components/TextareaCopyable.vue';
 import { withDefaultOnErrorAsync } from '@/utils/defaults';
 import { useValidation } from '@/composable/validation';
 import { computedRefreshableAsync } from '@/composable/computedRefreshable';
 
-const bits = ref(2048);
+const bits = ref(DEFAULT_RSA_BITS);
 const emptyCerts = { publicKeyPem: '', privateKeyPem: '' };
 
 const { attrs: bitsValidationAttrs } = useValidation({
   source: bits,
   rules: [
     {
-      message: 'Bits should be 256 <= bits <= 16384 and be a multiple of 8',
-      validator: value => value >= 256 && value <= 16384 && value % 8 === 0,
+      message: `Bits should be ${MIN_RSA_BITS} <= bits <= ${MAX_RSA_BITS} and be a multiple of 8`,
+      validator: (value) => {
+        try {
+          validateRsaBits(value);
+          return true;
+        }
+        catch {
+          return false;
+        }
+      },
     },
   ],
 });
@@ -28,7 +42,12 @@ const [certs, refreshCerts] = computedRefreshableAsync(
   <div style="flex: 0 0 100%">
     <div item-style="flex: 1 1 0" style="max-width: 600px" mx-auto flex gap-3>
       <n-form-item label="Bits :" v-bind="bitsValidationAttrs as any" label-placement="left" label-width="100">
-        <n-input-number v-model:value="bits" min="256" max="16384" step="8" />
+        <n-input-number
+          v-model:value="bits"
+          :min="MIN_RSA_BITS"
+          :max="MAX_RSA_BITS"
+          step="8"
+        />
       </n-form-item>
 
       <c-button @click="refreshCerts">

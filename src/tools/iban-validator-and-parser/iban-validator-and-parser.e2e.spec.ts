@@ -5,10 +5,14 @@ async function extractIbanInfo({ page }: { page: Page }) {
     .locator('.c-key-value-list__item').all();
 
   return await Promise.all(
-    itemsLines.map(async item => [
-      (await item.locator('.c-key-value-list__key').textContent() ?? '').trim(),
-      (await item.locator('.c-key-value-list__value').textContent() ?? '').trim(),
-    ]),
+    itemsLines.map(async item => item.evaluate((element) => {
+      const clone = element.cloneNode(true) as HTMLElement;
+      clone.querySelectorAll('[role="tooltip"]').forEach(tooltip => tooltip.remove());
+      return [
+        clone.querySelector('.c-key-value-list__key')?.textContent?.trim() ?? '',
+        clone.querySelector('.c-key-value-list__value')?.textContent?.trim() ?? '',
+      ];
+    })),
   );
 }
 

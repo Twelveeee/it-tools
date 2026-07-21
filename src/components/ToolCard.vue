@@ -9,33 +9,33 @@ const theme = useThemeVars();
 </script>
 
 <template>
-  <router-link :to="tool.path" class="decoration-none">
-    <c-card class="h-full transition transition-duration-0.5s !border-2px !hover:border-primary">
-      <div flex items-center justify-between>
+  <c-card class="relative h-full transition transition-duration-0.5s !border-2px !hover:border-primary">
+    <router-link :to="tool.path" class="block decoration-none">
+      <div flex items-center pr-80px>
         <n-icon class="text-neutral-400 dark:text-neutral-600" size="40" :component="tool.icon" />
-
-        <div flex items-center gap-8px>
-          <div
-            v-if="tool.isNew"
-            class="rounded-full px-8px py-3px text-xs text-white dark:text-neutral-800"
-            :style="{
-              'background-color': theme.primaryColor,
-            }"
-          >
-            {{ $t('toolCard.new') }}
-          </div>
-
-          <FavoriteButton :tool="tool" />
-        </div>
       </div>
 
-      <div class="truncat my-5px text-lg text-black dark:text-white">
+      <h3 class="my-5px truncate text-lg text-black font-normal dark:text-white">
         {{ tool.name }}
-      </div>
+      </h3>
 
       <div class="line-clamp-2 text-neutral-500 dark:text-neutral-400">
         {{ tool.description }}
       </div>
-    </c-card>
-  </router-link>
+    </router-link>
+
+    <div absolute right-24px top-20px flex items-center gap-8px>
+      <div
+        v-if="tool.isNew"
+        class="rounded-full px-8px py-3px text-xs text-white dark:text-neutral-800"
+        :style="{
+          'background-color': theme.primaryColor,
+        }"
+      >
+        {{ $t('toolCard.new') }}
+      </div>
+
+      <FavoriteButton :tool="tool" />
+    </div>
+  </c-card>
 </template>

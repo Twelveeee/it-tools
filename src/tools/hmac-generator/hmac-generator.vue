@@ -6,20 +6,20 @@ import {
   HmacSHA1,
   HmacSHA224,
   HmacSHA256,
-  HmacSHA3,
   HmacSHA384,
   HmacSHA512,
   enc,
 } from 'crypto-js';
 
 import { convertHexToBin } from '../hash-text/hash-text.service';
+import { HMAC_KECCAK_512_LABEL, computeHmacKeccak512 } from './hmac-generator.service';
 import { useCopy } from '@/composable/copy';
 
 const algos = {
   MD5: HmacMD5,
   RIPEMD160: HmacRIPEMD160,
   SHA1: HmacSHA1,
-  SHA3: HmacSHA3,
+  [HMAC_KECCAK_512_LABEL]: computeHmacKeccak512,
   SHA224: HmacSHA224,
   SHA256: HmacSHA256,
   SHA384: HmacSHA384,
@@ -49,6 +49,10 @@ const { copy } = useCopy({ source: hmac });
   <div flex flex-col gap-4>
     <c-input-text v-model:value="plainText" multiline raw-text placeholder="Plain text to compute the hash..." rows="3" autosize autofocus label="Plain text to compute the hash" />
     <c-input-text v-model:value="secret" raw-text placeholder="Enter the secret key..." label="Secret key" clearable />
+
+    <c-alert title="Keccak is not NIST SHA-3">
+      CryptoJS exposes this function as “HmacSHA3”, but it computes HMAC-Keccak-512. The label is explicit to prevent interoperability mistakes with standardized HMAC-SHA3-512.
+    </c-alert>
 
     <div flex gap-2>
       <c-select

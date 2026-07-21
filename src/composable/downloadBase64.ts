@@ -1,6 +1,5 @@
-import { extension as getExtensionFromMimeType, extension as getMimeTypeFromExtension } from 'mime-types';
+import { extension as getExtensionFromMimeType, lookup as getMimeTypeFromExtension } from 'mime-types';
 import type { Ref } from 'vue';
-import _ from 'lodash';
 
 export {
   getMimeTypeFromBase64,
@@ -24,7 +23,8 @@ function getMimeTypeFromBase64({ base64String }: { base64String: string }) {
     return { mimeType: mimeTypeFromBase64 };
   }
 
-  const inferredMimeType = _.find(commonMimeTypesSignatures, (_mimeType, signature) => base64String.startsWith(signature));
+  const inferredMimeType = Object.entries(commonMimeTypesSignatures)
+    .find(([signature]) => base64String.startsWith(signature))?.[1];
 
   if (inferredMimeType) {
     return { mimeType: inferredMimeType };
@@ -57,7 +57,7 @@ function downloadFromBase64({ sourceValue, filename, extension, fileMimeType }:
   const { mimeType } = getMimeTypeFromBase64({ base64String: sourceValue });
   let base64String = sourceValue;
   if (!mimeType) {
-    const targetMimeType = fileMimeType ?? getMimeTypeFromExtension(defaultExtension);
+    const targetMimeType = fileMimeType ?? getMimeTypeFromExtension(defaultExtension) ?? 'application/octet-stream';
     base64String = `data:${targetMimeType};base64,${sourceValue}`;
   }
 

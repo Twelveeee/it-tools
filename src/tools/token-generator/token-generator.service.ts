@@ -1,4 +1,7 @@
-import { shuffleString } from '@/utils/random';
+import { randIntFromInterval } from '@/utils/random';
+
+export const MAX_TOKEN_LENGTH = 512;
+export const TOKEN_SYMBOLS = '.,;:!?/-"\'#{}()[]|\\@=*+';
 
 export function createToken({
   withUppercase = true,
@@ -15,12 +18,25 @@ export function createToken({
   length?: number
   alphabet?: string
 }) {
+  if (!Number.isSafeInteger(length) || length < 0 || length > MAX_TOKEN_LENGTH) {
+    throw new RangeError(`Token length must be an integer between 0 and ${MAX_TOKEN_LENGTH}`);
+  }
+
   const allAlphabet = alphabet ?? [
-    withUppercase ? 'ABCDEFGHIJKLMOPQRSTUVWXYZ' : '',
-    withLowercase ? 'abcdefghijklmopqrstuvwxyz' : '',
+    withUppercase ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' : '',
+    withLowercase ? 'abcdefghijklmnopqrstuvwxyz' : '',
     withNumbers ? '0123456789' : '',
-    withSymbols ? '.,;:!?./-"\'#{([-|\\@)]=}*+' : '',
+    withSymbols ? TOKEN_SYMBOLS : '',
   ].join('');
 
-  return shuffleString(allAlphabet.repeat(length)).substring(0, length);
+  // Duplicate alphabet entries would give those characters extra probability.
+  const characters = Array.from(new Set(allAlphabet));
+  if (characters.length === 0) {
+    return '';
+  }
+
+  return Array.from(
+    { length },
+    () => characters[randIntFromInterval(0, characters.length)],
+  ).join('');
 }

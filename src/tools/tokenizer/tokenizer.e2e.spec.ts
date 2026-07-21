@@ -11,7 +11,6 @@ test.describe('Tool - Tokenizer', () => {
 
   test('Counts GPT-5.4 tokens in text mode', async ({ page }) => {
     await page.getByPlaceholder('Enter text to tokenize...').fill('hello world');
-    await expect(page.getByText('Token count')).toBeVisible();
-    await expect(page.getByText(/\b2\b|\b3\b/).first()).toBeVisible();
+    await expect(page.getByTestId('token-count')).toContainText(/Token count\s*[23]/);
   });
 });

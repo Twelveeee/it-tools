@@ -1,33 +1,65 @@
 <script lang="ts" setup>
 import { useRoute } from 'vue-router';
-import { useHead } from '@vueuse/head';
-import type { HeadObject } from '@vueuse/head';
+import { useHead } from '@unhead/vue';
 
 import BaseLayout from './base.layout.vue';
 import FavoriteButton from '@/components/FavoriteButton.vue';
+import { config } from '@/config';
 import type { Tool } from '@/tools/tools.types';
 
 const route = useRoute();
-
-const head = computed<HeadObject>(() => ({
-  title: `${route.meta.name} - IT Tools`,
-  meta: [
-    {
-      name: 'description',
-      content: route.meta?.description as string,
-    },
-    {
-      name: 'keywords',
-      content: ((route.meta.keywords ?? []) as string[]).join(','),
-    },
-  ],
-}));
-useHead(head);
 const { t } = useI18n();
 
 const i18nKey = computed<string>(() => route.path.trim().replace('/', ''));
 const toolTitle = computed<string>(() => t(`tools.${i18nKey.value}.title`, String(route.meta.name)));
 const toolDescription = computed<string>(() => t(`tools.${i18nKey.value}.description`, String(route.meta.description)));
+const canonicalUrl = computed(() => {
+  const basePath = config.app.baseUrl.replace(/\/+$/, '');
+  const canonicalPath = `${basePath}/${route.path.replace(/^\/+/, '')}`;
+  return new URL(canonicalPath, config.app.siteUrl).toString();
+});
+
+const head = computed(() => ({
+  title: `${toolTitle.value} - IT Tools`,
+  link: [
+    {
+      rel: 'canonical',
+      href: canonicalUrl.value,
+    },
+  ],
+  meta: [
+    {
+      name: 'description',
+      content: toolDescription.value,
+    },
+    {
+      name: 'keywords',
+      content: ((route.meta.keywords ?? []) as string[]).join(','),
+    },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:site_name', content: 'IT Tools' },
+    { property: 'og:title', content: `${toolTitle.value} - IT Tools` },
+    { property: 'og:description', content: toolDescription.value },
+    { property: 'og:url', content: canonicalUrl.value },
+  ],
+  script: [
+    {
+      id: 'tool-structured-data',
+      type: 'application/ld+json',
+      textContent: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        'applicationCategory': 'DeveloperApplication',
+        'description': toolDescription.value,
+        'isAccessibleForFree': true,
+        'name': toolTitle.value,
+        'operatingSystem': 'Any',
+        'url': canonicalUrl.value,
+      }),
+    },
+  ],
+}));
+useHead(head);
 </script>
 
 <template>

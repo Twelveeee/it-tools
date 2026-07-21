@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { createToken } from './token-generator.service';
+import { MAX_TOKEN_LENGTH, createToken } from './token-generator.service';
 import { useCopy } from '@/composable/copy';
 import { useQueryParam } from '@/composable/queryParams';
 import { computedRefreshable } from '@/composable/computedRefreshable';
@@ -11,18 +11,27 @@ const withNumbers = useQueryParam({ name: 'numbers', defaultValue: true });
 const withSymbols = useQueryParam({ name: 'symbols', defaultValue: false });
 const { t } = useI18n();
 
+const safeLength = computed(() => {
+  const parsedLength = Number(length.value);
+  if (!Number.isFinite(parsedLength)) {
+    return 64;
+  }
+
+  return Math.min(MAX_TOKEN_LENGTH, Math.max(1, Math.trunc(parsedLength)));
+});
+
 const lengthInputValue = computed<number | null>({
-  get: () => length.value,
+  get: () => safeLength.value,
   set: (value) => {
     if (value !== null) {
-      length.value = value;
+      length.value = Math.min(MAX_TOKEN_LENGTH, Math.max(1, Math.trunc(value)));
     }
   },
 });
 
 const [token, refreshToken] = computedRefreshable(() =>
   createToken({
-    length: length.value,
+    length: safeLength.value,
     withUppercase: withUppercase.value,
     withLowercase: withLowercase.value,
     withNumbers: withNumbers.value,
@@ -68,7 +77,7 @@ const { copy } = useCopy({ source: token, text: t('tools.token-generator.copied'
             class="length-input"
             :step="1"
             :min="1"
-            :max="512"
+            :max="MAX_TOKEN_LENGTH"
             :precision="0"
           />
         </div>
@@ -76,11 +85,11 @@ const { copy } = useCopy({ source: token, text: t('tools.token-generator.copied'
 
       <c-input-text
         v-model:value="token"
-        multiline
+
         :placeholder="t('tools.token-generator.tokenPlaceholder')"
-        readonly
+
         rows="3"
-        autosize
+        readonly autosize multiline
         class="token-display"
       />
 

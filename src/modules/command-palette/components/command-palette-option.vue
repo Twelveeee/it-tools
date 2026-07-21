@@ -4,7 +4,7 @@ import type { PaletteOption } from '../command-palette.types';
 const props = withDefaults(defineProps<{ option: PaletteOption; selected?: boolean }>(), {
   selected: false,
 });
-const emit = defineEmits(['activated']);
+const emit = defineEmits(['activated', 'focused']);
 const { option } = toRefs(props);
 
 const { selected } = toRefs(props);
@@ -19,9 +19,11 @@ const { selected } = toRefs(props);
       'bg-primary': selected,
     }"
     w-full flex cursor-pointer items-center overflow-hidden rounded pa-3 transition hover:bg-primary hover:text-white
+    @mousedown.prevent
+    @mouseenter="() => emit('focused', option)"
     @click="() => emit('activated', option)"
   >
-    <component :is="option.icon" v-if="option.icon" mr-3 h-30px w-30px shrink-0 op-50 />
+    <component :is="option.icon" v-if="option.icon" aria-hidden="true" mr-3 h-30px w-30px shrink-0 op-50 />
 
     <div flex-1 overflow-hidden>
       <div truncate font-bold lh-tight op-90>

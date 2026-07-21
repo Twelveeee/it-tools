@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { decodeJwt } from './jwt-parser.service';
+import { JWT_DECODE_ONLY_WARNING, decodeJwt } from './jwt-parser.service';
 import { useValidation } from '@/composable/validation';
 import { isNotThrowing } from '@/utils/boolean';
 import { withDefaultOnError } from '@/utils/defaults';
@@ -13,8 +13,8 @@ const decodedJWT = computed(() =>
 );
 
 const sections = [
-  { key: 'header', title: 'Header' },
-  { key: 'payload', title: 'Payload' },
+  { key: 'header', title: 'Header (decoded, unverified)' },
+  { key: 'payload', title: 'Payload (decoded, unverified)' },
 ] as const;
 
 const validation = useValidation({
@@ -30,6 +30,10 @@ const validation = useValidation({
 
 <template>
   <c-card>
+    <c-alert mb-4 title="Decoded claims are not authenticated">
+      {{ JWT_DECODE_ONLY_WARNING }}
+    </c-alert>
+
     <c-input-text v-model:value="rawJwt" label="JWT to decode" :validation="validation" placeholder="Put your token here..." rows="5" multiline raw-text autofocus mb-3 />
 
     <n-table v-if="validation.isValid">

@@ -5,13 +5,15 @@ import _ from 'lodash';
 import CInputText from './c-input-text.vue';
 import { useValidation } from '@/composable/validation';
 
+const TestCInputText = CInputText as any;
+
 describe('CInputText', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
   });
 
   it('Renders a label', () => {
-    const wrapper = shallowMount(CInputText, {
+    const wrapper = shallowMount(TestCInputText, {
       props: {
         label: 'Label',
       },
@@ -21,7 +23,7 @@ describe('CInputText', () => {
   });
 
   it('Renders a placeholder', () => {
-    const wrapper = shallowMount(CInputText, {
+    const wrapper = shallowMount(TestCInputText, {
       props: {
         placeholder: 'Placeholder',
       },
@@ -30,8 +32,16 @@ describe('CInputText', () => {
     expect(wrapper.get('.input').attributes('placeholder')).to.equal('Placeholder');
   });
 
+  it('forwards maxlength to text inputs and textareas', () => {
+    const input = shallowMount(TestCInputText, { props: { maxlength: 42 } });
+    const textarea = shallowMount(TestCInputText, { props: { maxlength: 84, multiline: true } });
+
+    expect(input.get('input').attributes('maxlength')).to.equal('42');
+    expect(textarea.get('textarea').attributes('maxlength')).to.equal('84');
+  });
+
   it('Renders a value', () => {
-    const wrapper = shallowMount(CInputText, {
+    const wrapper = shallowMount(TestCInputText, {
       props: {
         value: 'Value',
       },
@@ -41,7 +51,7 @@ describe('CInputText', () => {
   });
 
   it('Renders a provided id', () => {
-    const wrapper = shallowMount(CInputText, {
+    const wrapper = shallowMount(TestCInputText, {
       props: {
         id: 'id',
       },
@@ -51,7 +61,7 @@ describe('CInputText', () => {
   });
 
   it('updates value on input', async () => {
-    const wrapper = shallowMount(CInputText);
+    const wrapper = shallowMount(TestCInputText);
 
     await wrapper.get('input').setValue('Hello');
 
@@ -59,7 +69,7 @@ describe('CInputText', () => {
   });
 
   it('cannot be edited when disabled', async () => {
-    const wrapper = shallowMount(CInputText, {
+    const wrapper = shallowMount(TestCInputText, {
       props: {
         disabled: true,
       },
@@ -71,7 +81,7 @@ describe('CInputText', () => {
   });
 
   it('renders a feedback message for invalid rules', async () => {
-    const wrapper = shallowMount(CInputText, {
+    const wrapper = shallowMount(TestCInputText, {
       props: { validationRules: [{ validator: () => false, message: 'Message' }] },
     });
 
@@ -81,7 +91,7 @@ describe('CInputText', () => {
   });
 
   it('if the value become valid according to rules, the feedback disappear', async () => {
-    const wrapper = shallowMount(CInputText, {
+    const wrapper = shallowMount(TestCInputText, {
       props: {
         validationRules: [{ validator: (value: string) => value === 'Hello', message: 'Value should be Hello' }],
       },
@@ -97,7 +107,7 @@ describe('CInputText', () => {
   });
 
   it('feedback does not render for valid rules', async () => {
-    const wrapper = shallowMount(CInputText, {
+    const wrapper = shallowMount(TestCInputText, {
       props: { rules: [{ validator: () => true, message: 'Message' }] },
     });
 
@@ -105,7 +115,7 @@ describe('CInputText', () => {
   });
 
   it('renders a feedback message for invalid custom validation wrapper', async () => {
-    const wrapper = shallowMount(CInputText, {
+    const wrapper = shallowMount(TestCInputText, {
       props: {
         validation: useValidation({ source: ref(), rules: [{ validator: () => false, message: 'Message' }] }),
       },
@@ -117,7 +127,7 @@ describe('CInputText', () => {
   });
 
   it('feedback does not render for valid custom validation wrapper', async () => {
-    const wrapper = shallowMount(CInputText, {
+    const wrapper = shallowMount(TestCInputText, {
       props: {
         validation: useValidation({ source: ref(), rules: [{ validator: () => true, message: 'Message' }] }),
       },
@@ -128,7 +138,7 @@ describe('CInputText', () => {
   it('if the value become valid according to the custom validation wrapper, the feedback disappear', async () => {
     const source = ref('');
 
-    const wrapper = shallowMount(CInputText, {
+    const wrapper = shallowMount(TestCInputText, {
       props: {
         validation: useValidation({
           source,
@@ -149,7 +159,7 @@ describe('CInputText', () => {
   });
 
   it('[prop:testId] renders a test id on the input', async () => {
-    const wrapper = mount(CInputText, {
+    const wrapper = mount(TestCInputText, {
       props: {
         testId: 'TEST',
       },

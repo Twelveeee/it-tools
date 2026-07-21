@@ -4,9 +4,9 @@ import CInputText from '@/ui/c-input-text/c-input-text.vue';
 import { useCopy } from '@/composable/copy';
 import { useValidation } from '@/composable/validation';
 
-const defaultInput = "INSERT INTO `demo_app`.`demo_event_log` (`id`, `keyword`, `pid`, `source`, `source_cate`, `raw_heat_value`, `heat_value`, `max_rank`, `first_rank_time`, `last_rank_time`, `created_at`, `updated_at`) VALUES (101, 'sample topic alpha', 9001, 'demo', 'example category', 123456, 7890, 12, '2026-01-01 10:00:00', '2026-01-01 10:00:00', '2026-01-01 10:05:00', '2026-01-01 10:10:00');\nINSERT INTO `demo_app`.`demo_event_log` (`id`, `keyword`, `pid`, `source`, `source_cate`, `raw_heat_value`, `heat_value`, `max_rank`, `first_rank_time`, `last_rank_time`, `created_at`, `updated_at`) VALUES (102, 'sample topic beta', 9002, 'demo', 'sample category', 234567, 8901, 8, '2026-01-01 10:15:00', '2026-01-01 10:15:00', '2026-01-01 10:20:00', '2026-01-01 10:25:00');";
+const defaultInput = 'INSERT INTO users (id, name) VALUES (1, \'Alice\');';
 
-const input = useStorage('mysql-insert-merger:input', defaultInput);
+const input = ref(defaultInput);
 const removeDatabaseName = useStorage('mysql-insert-merger:remove-database-name', true);
 const removeId = useStorage('mysql-insert-merger:remove-id', true);
 const batchSize = useStorage<number | null>('mysql-insert-merger:batch-size', 1000);
@@ -31,6 +31,8 @@ const validation = useValidation({
 
 const output = computed(() => transformResult.value.ok ? transformResult.value.value : '');
 const { copy } = useCopy({ source: output, text: 'MySQL INSERT output copied to the clipboard' });
+
+onMounted(() => localStorage.removeItem('mysql-insert-merger:input'));
 </script>
 
 <template>

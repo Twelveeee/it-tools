@@ -103,4 +103,14 @@ describe('regex-tester', () => {
       expect(result).to.deep.equal(expected_result);
     });
   }
+
+  it('limits the number of returned matches', () => {
+    expect(matchRegex('a', 'aaaa', 'gd', 2)).toHaveLength(2);
+  });
+
+  it('handles optional captures that did not participate in the match', () => {
+    expect(matchRegex('(a)?b', 'b', 'd')).toEqual([
+      { captures: [], groups: [], index: 0, value: 'b' },
+    ]);
+  });
 });

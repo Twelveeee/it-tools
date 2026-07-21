@@ -34,11 +34,7 @@ test.describe('Tool - OTP code generator', () => {
 
   test('You can generate a new random secret', async ({ page }) => {
     const initialSecret = await page.getByPlaceholder('Paste your TOTP secret...').inputValue();
-    await page
-      .locator('div')
-      .filter({ hasText: /^Secret$/ })
-      .getByRole('button')
-      .click();
+    await page.getByRole('button', { name: 'Generate a new random secret' }).click();
 
     const newSecret = await page.getByPlaceholder('Paste your TOTP secret...').inputValue();
 

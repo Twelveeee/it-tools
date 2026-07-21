@@ -3,6 +3,7 @@ import {
   base32toHex,
   buildKeyUri,
   generateHOTP,
+  generateSecret,
   generateTOTP,
   hexToBytes,
   verifyHOTP,
@@ -123,6 +124,15 @@ describe('otp functions', () => {
       ).to.eql(
         'otpauth://totp/app-name:account?issuer=app-name&secret=JBSWY3DPEHPK3PXP&algorithm=algo&digits=7&period=10',
       );
+    });
+  });
+
+  describe('generateSecret', () => {
+    it('generates a 160-bit Base32 secret', () => {
+      const secret = generateSecret();
+
+      expect(secret).toHaveLength(32);
+      expect(secret).toMatch(/^[A-Z2-7]+$/);
     });
   });
 });

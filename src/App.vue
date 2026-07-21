@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterView, useRoute } from 'vue-router';
 import { NGlobalStyle, NMessageProvider, NNotificationProvider, darkTheme } from 'naive-ui';
+import { useHead } from '@unhead/vue';
 import { darkThemeOverrides, lightThemeOverrides } from './themes';
 import { layouts } from './layouts';
 import { useStyleStore } from './stores/style.store';
@@ -13,6 +14,12 @@ const theme = computed(() => (styleStore.isDarkTheme ? darkTheme : null));
 const themeOverrides = computed(() => (styleStore.isDarkTheme ? darkThemeOverrides : lightThemeOverrides));
 
 const { locale } = useI18n();
+
+useHead(computed(() => ({
+  htmlAttrs: {
+    lang: locale.value,
+  },
+})));
 
 syncRef(
   locale,

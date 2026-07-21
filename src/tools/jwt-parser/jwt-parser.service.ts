@@ -4,6 +4,9 @@ import { ALGORITHM_DESCRIPTIONS, CLAIM_DESCRIPTIONS } from './jwt-parser.constan
 
 export { decodeJwt };
 
+export const JWT_DECODE_ONLY_WARNING
+  = 'Decode only: the signature, issuer, audience, expiration, and not-before claims are not verified. Treat every displayed claim as untrusted input.';
+
 function decodeJwt({ jwt }: { jwt: string }) {
   const rawHeader = jwtDecode<JwtHeader>(jwt, { header: true });
   const rawPayload = jwtDecode<JwtPayload>(jwt);
